@@ -34,6 +34,21 @@ On a Friday evening, a sudden torrential downpour completely floods his delivery
 **The Workflow Scenario:** 
 GigShield continuously monitors local weather API triggers in Rahul's geofence. Within seconds of the heavy rain disruption threshold being met, the AI Engine calculates the expected ₹500 vs the actual ₹200 he managed to earn before the storm, and **automatically pays out the ₹300 difference** to his wallet—no claims adjusters, no delays, zero friction.
 
+### The GigShield Parametric Workflow Architecture
+Below is the automated, zero-friction parametric insurance workflow built directly into our system:
+
+```mermaid
+flowchart TD
+    A[Extreme Weather / Social Disruption 🌧️] --> B{Oracle API Trigger}
+    B -->|Verified Severe| C[GigShield Smart Contracts]
+    B -->|Below Threshold| Z[No Action]
+    C --> D[Identify Affected Delivery Partners in Zone]
+    D --> E{AI Anti-Spoofing Checks}
+    E -->|Biometrics & GPS OK| F[Calculate: Expected Income vs Actual Earned]
+    E -->|Static/Spoofed Telemetry| X[Flagged: Syndicate Fraud Blocked 🚫]
+    F --> G[Instantly Disburse Calculated Loss Payout 💸]
+```
+
 ---
 
 ## 📅 3. Weekly Premium Pricing Model & Parametric Triggers
