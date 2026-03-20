@@ -9,7 +9,7 @@ export default function Admin() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get('http://localhost:5000/api/admin/stats');
+      const { data } = await axios.get('https://gigshield-backend-c1z7.onrender.com/api/admin/stats');
       setData(data);
     } catch (error) {
       console.error(error);

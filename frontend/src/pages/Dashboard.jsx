@@ -16,7 +16,7 @@ export default function Dashboard() {
     try {
       const storedUser = JSON.parse(localStorage.getItem('user'));
       if (!storedUser) return;
-      const { data } = await axios.get(`http://localhost:5000/api/auth/user/${storedUser._id}`);
+      const { data } = await axios.get(`https://gigshield-backend-c1z7.onrender.com/api/auth/user/${storedUser._id}`);
       setUserData(data.user);
       setClaims(data.claims);
     } catch (error) {
@@ -28,7 +28,7 @@ export default function Dashboard() {
 
   const subscribePlan = async (planName) => {
     try {
-      await axios.post('http://localhost:5000/api/insurance/subscribe', { userId: userData._id, plan: planName });
+      await axios.post('https://gigshield-backend-c1z7.onrender.com/api/insurance/subscribe', { userId: userData._id, plan: planName });
       setIsSelectingPlan(false);
       fetchUser();
     } catch (error) { alert('Failed to subscribe'); }
@@ -38,7 +38,7 @@ export default function Dashboard() {
     setLoading(true); setSimulationResult(null); setSimStep(1); setShowClaimPopup(false);
     
     try {
-      const { data } = await axios.post('http://localhost:5000/api/insurance/simulate-event', {
+      const { data } = await axios.post('https://gigshield-backend-c1z7.onrender.com/api/insurance/simulate-event', {
         userId: userData._id, triggerEvent: type, city: userData.city, expectedIncome: 500, actualIncome: 200, isWorkerActive: env.active, isGpsVerified: env.gps, isTelemetryValid: env.telemetry
       });
       setSimStep(2); 
