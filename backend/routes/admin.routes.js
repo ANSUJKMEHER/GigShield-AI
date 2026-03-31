@@ -31,4 +31,20 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+router.post('/reset-weekly', async (req, res) => {
+  try {
+    const users = await User.find({ activePlan: { $ne: 'None' } });
+    let resetCount = 0;
+    for (const u of users) {
+      u.claimsThisWeek = 0;
+      u.coverageRemaining = u.coverage;
+      await u.save();
+      resetCount++;
+    }
+    res.json({ message: `Weekly limits reset for ${resetCount} active policies.` });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error resetting weeks' });
+  }
+});
+
 module.exports = router;

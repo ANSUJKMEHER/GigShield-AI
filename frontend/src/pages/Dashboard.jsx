@@ -8,38 +8,145 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [simStep, setSimStep] = useState(0); 
   const [simulationResult, setSimulationResult] = useState(null);
-  const [env, setEnv] = useState({ active: true, gps: true, telemetry: true });
+  
+  // LIVE SENSORS STATE
+  const [liveGps, setLiveGps] = useState(null);
+  const [liveWeather, setLiveWeather] = useState(null);
+  const [telemetryVariance, setTelemetryVariance] = useState(0.00);
+
   const [isSelectingPlan, setIsSelectingPlan] = useState(false);
   const [showClaimPopup, setShowClaimPopup] = useState(false);
+  const [dynamicBasePremium, setDynamicBasePremium] = useState(10);
+  
+  const [currentCity, setCurrentCity] = useState('');
+  const [currentRiskScore, setCurrentRiskScore] = useState(null);
 
   const fetchUser = async () => {
     try {
       const storedUser = JSON.parse(localStorage.getItem('user'));
       if (!storedUser) return;
-      const { data } = await axios.get(`https://gigshield-backend-c1z7.onrender.com/api/auth/user/${storedUser._id}`);
+      
+      const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
+      const { data } = await axios.get(`${API_URL}/api/auth/user/${storedUser._id}`);
       setUserData(data.user);
       setClaims(data.claims);
+      
+      // Fetch dynamic base premium
+      try {
+        const riskRes = await axios.get(`${API_URL}/api/insurance/risk/${data.user.city}?zone=${data.user.zone || 'General'}`);
+        if (riskRes.data && riskRes.data.basePremium) {
+          setDynamicBasePremium(riskRes.data.basePremium);
+        }
+      } catch (err) { console.error('Error fetching risk score', err); }
     } catch (error) {
       console.error(error);
     }
   };
 
-  useEffect(() => { fetchUser(); }, []);
+  useEffect(() => { 
+    fetchUser(); 
+    
+    // Check if we already have the geo city to avoid waiting for GPS if it's cached/slow... but watchPosition takes care of it
+    const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
+    
+    // START LIVE SENSOR ENGINE
+    let accelData = [];
+    const handleMotion = (event) => {
+      if (event.accelerationIncludingGravity) {
+        const { x, y, z } = event.accelerationIncludingGravity;
+        const ax = x || 0; const ay = y || 0; const az = z || 0;
+        const magnitude = Math.sqrt(ax*ax + ay*ay + az*az);
+        accelData.push(magnitude);
+        if (accelData.length > 30) accelData.shift();
+        
+        if (accelData.length > 5) {
+          const mean = accelData.reduce((a,b)=>a+b, 0) / accelData.length;
+          const variance = accelData.reduce((a,b)=>a + Math.pow(b - mean, 2), 0) / accelData.length;
+          setTelemetryVariance(variance);
+        }
+      }
+    };
+
+    if (window.DeviceMotionEvent) {
+      window.addEventListener('devicemotion', handleMotion);
+    }
+
+    let watchId;
+    if ("geolocation" in navigator) {
+      watchId = navigator.geolocation.watchPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          setLiveGps({ lat, lon });
+
+          try {
+            // Reverse geocode to get actual city
+            const geoRes = await axios.get(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+            let actualCity = '';
+            if (geoRes.data?.city || geoRes.data?.locality) {
+              actualCity = geoRes.data.city || geoRes.data.locality;
+              setCurrentCity(actualCity);
+            }
+            
+            // Re-fetch risk score for actual city
+            const fetchCity = actualCity || currentCity || 'General';
+            const riskRes = await axios.get(`${API_URL}/api/insurance/risk/${fetchCity}?zone=General`);
+            if (riskRes.data) {
+              setDynamicBasePremium(riskRes.data.basePremium);
+              setCurrentRiskScore(riskRes.data.riskScore);
+            }
+          } catch (e) {
+             console.error("Geocoding or Risk Fetch failed", e);
+          }
+
+          try {
+            const res = await axios.get(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=precipitation,weather_code`);
+            if (res.data?.current) {
+              setLiveWeather({ rain: res.data.current.precipitation, weather_code: res.data.current.weather_code });
+            }
+          } catch (e) {
+            console.error("Weather API failed", e);
+          }
+        },
+        (err) => console.error("GPS Error", err),
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
+    }
+
+    return () => {
+      window.removeEventListener('devicemotion', handleMotion);
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+    };
+  }, []);
 
   const subscribePlan = async (planName) => {
     try {
-      await axios.post('https://gigshield-backend-c1z7.onrender.com/api/insurance/subscribe', { userId: userData._id, plan: planName });
+      const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
+      await axios.post(`${API_URL}/api/insurance/subscribe`, { userId: userData._id, plan: planName });
       setIsSelectingPlan(false);
       fetchUser();
     } catch (error) { alert('Failed to subscribe'); }
+  };
+
+  const cancelPlan = async () => {
+    if(!confirm('Are you sure you want to cancel your active coverage?')) return;
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
+      await axios.post(`${API_URL}/api/insurance/cancel`, { userId: userData._id });
+      setIsSelectingPlan(false);
+      fetchUser();
+    } catch (error) { alert('Failed to cancel policy'); }
   };
 
   const handleSimulate = async (type) => {
     setLoading(true); setSimulationResult(null); setSimStep(1); setShowClaimPopup(false);
     
     try {
-      const { data } = await axios.post('https://gigshield-backend-c1z7.onrender.com/api/insurance/simulate-event', {
-        userId: userData._id, triggerEvent: type, city: userData.city, expectedIncome: 500, actualIncome: 200, isWorkerActive: env.active, isGpsVerified: env.gps, isTelemetryValid: env.telemetry
+      const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
+      const cityToUse = currentCity || userData.city;
+      const { data } = await axios.post(`${API_URL}/api/insurance/simulate-event`, {
+        userId: userData._id, triggerEvent: type, city: cityToUse, expectedIncome: 500, actualIncome: 200, 
+        liveGps, liveWeather, telemetryVariance, isWorkerActive: true
       });
       setSimStep(2); 
       setTimeout(() => {
@@ -63,12 +170,17 @@ export default function Dashboard() {
 
   if (!userData) return null;
 
-  const riskLabel = userData.riskScore >= 0.8 ? 'High' : userData.riskScore >= 0.5 ? 'Medium' : 'Low';
-  const riskColor = userData.riskScore >= 0.8 ? 'text-red-400' : userData.riskScore >= 0.5 ? 'text-orange-400' : 'text-emerald-400';
-  const riskShadow = userData.riskScore >= 0.8 ? 'shadow-[0_0_20px_rgba(248,113,113,0.4)]' : userData.riskScore >= 0.5 ? 'shadow-[0_0_20px_rgba(251,146,60,0.4)]' : 'shadow-[0_0_20px_rgba(52,211,153,0.4)]';
+  const displayCity = currentCity || userData.city;
+  const displayRisk = currentRiskScore !== null ? currentRiskScore : userData.riskScore;
+
+  const riskLabel = displayRisk >= 0.8 ? 'High' : displayRisk >= 0.5 ? 'Medium' : 'Low';
+  const riskColor = displayRisk >= 0.8 ? 'text-red-400' : displayRisk >= 0.5 ? 'text-orange-400' : 'text-emerald-400';
+  const riskShadow = displayRisk >= 0.8 ? 'shadow-[0_0_20px_rgba(248,113,113,0.4)]' : displayRisk >= 0.5 ? 'shadow-[0_0_20px_rgba(251,146,60,0.4)]' : 'shadow-[0_0_20px_rgba(52,211,153,0.4)]';
 
   const claimsPercent = userData.maxClaimsPerWeek ? (userData.claimsThisWeek / userData.maxClaimsPerWeek) * 100 : 0;
   const coveragePercent = userData.coverage ? ((userData.coverage - userData.coverageRemaining) / userData.coverage) * 100 : 0;
+  
+  const isPolicyPending = userData.policyActiveAt && new Date() < new Date(userData.policyActiveAt);
 
   return (
     <div className="space-y-6 animate-in fade-in py-6 pb-20 relative font-sans">
@@ -97,17 +209,17 @@ export default function Dashboard() {
             <h1 className="text-3xl font-black text-white flex items-center gap-3 drop-shadow-md">
               Dashboard <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Overview</span>
             </h1>
-            <p className="text-slate-400 mt-2 font-medium text-lg">Platform: <span className="text-white backdrop-blur-sm bg-white/5 px-2 py-0.5 rounded-md border border-white/10">{userData.platform}</span> | User: {userData.name}</p>
+            <p className="text-slate-400 mt-2 font-medium text-lg">Platform: <span className="text-white backdrop-blur-sm bg-white/5 px-2 py-0.5 rounded-md border border-white/10">{userData.platform}</span> | User: {userData.name} | Location: {displayCity}</p>
           </div>
           
           <div className="relative z-10 flex flex-col items-start sm:items-end w-full sm:w-auto mt-4 sm:mt-0">
-             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Live Zone Threat</div>
+             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Live Threat ({displayCity})</div>
              <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900/50 backdrop-blur-md border border-slate-700/50 shadow-inner ${riskColor} relative`}>
                 <div className={`absolute inset-0 bg-current opacity-[0.03] rounded-2xl animate-pulse`}></div>
                 <Activity className="w-6 h-6 shrink-0 z-10" />
                 <div className="z-10 flex flex-col">
                   <span className="text-[10px] font-bold uppercase opacity-80 leading-none tracking-widest">Risk Score</span>
-                  <span className="text-2xl font-black leading-none mt-1">{userData.riskScore.toFixed(2)} <span className="text-sm">({riskLabel})</span></span>
+                  <span className="text-2xl font-black leading-none mt-1">{displayRisk.toFixed(2)} <span className="text-sm">({riskLabel})</span></span>
                 </div>
              </div>
           </div>
@@ -120,7 +232,7 @@ export default function Dashboard() {
             <Bell className="w-5 h-5 text-indigo-400 animate-bounce" /> Smart Intelligence
           </h3>
           <div className="space-y-3 relative z-10">
-            {userData.riskScore >= 0.5 && (
+            {displayRisk >= 0.5 && (
               <div className="flex gap-4 text-sm text-red-100 bg-red-500/10 p-4 rounded-xl border border-red-500/30 shadow-[0_4px_12px_rgba(239,68,68,0.1)] backdrop-blur-md transition-transform hover:-translate-y-1 hover:shadow-[0_8px_16px_rgba(239,68,68,0.15)]">
                 <AlertTriangle className="w-6 h-6 shrink-0 text-red-400" />
                 <div>
@@ -129,12 +241,12 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-            {['mumbai', 'bangalore', 'chennai'].includes(userData.city.toLowerCase()) ? (
+            {['mumbai', 'bangalore', 'chennai', 'delhi', 'pune'].includes(displayCity.toLowerCase()) ? (
               <div className="flex gap-4 text-sm text-amber-100 bg-amber-500/10 p-4 rounded-xl border border-amber-500/30 shadow-[0_4px_12px_rgba(245,158,11,0.1)] backdrop-blur-md transition-transform hover:-translate-y-1 hover:shadow-[0_8px_16px_rgba(245,158,11,0.15)]">
                 <CloudRain className="w-6 h-6 shrink-0 text-amber-400" />
                 <div>
                   <div className="font-bold text-amber-400 mb-0.5">Weather Alert Match</div>
-                  <p className="opacity-90 leading-tight text-xs">Severe weather reported in your {userData.city} radius.</p>
+                  <p className="opacity-90 leading-tight text-xs">Severe weather reported in your {displayCity} radius.</p>
                 </div>
               </div>
             ) : (
@@ -160,9 +272,14 @@ export default function Dashboard() {
               <UsageBar title="Coverage Depleted" prefix="₹" current={userData.coverage - userData.coverageRemaining} max={userData.coverage} percent={coveragePercent} color="from-emerald-500 to-teal-400" icon={<Wallet className="w-4 h-4 text-emerald-400"/>} />
            </div>
            
-           <button onClick={() => setIsSelectingPlan(true)} className="shrink-0 text-sm px-6 py-4 w-full sm:w-auto bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white rounded-2xl transition-all shadow-[0_0_15px_rgba(99,102,241,0.4)] hover:shadow-[0_0_25px_rgba(99,102,241,0.6)] font-bold tracking-wide hover:-translate-y-0.5 relative z-10">
-             Manage Policy
-           </button>
+           <div className="flex flex-col sm:flex-row gap-3 relative z-10">
+             <button onClick={() => setIsSelectingPlan(true)} className="text-sm px-6 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white rounded-2xl transition-all shadow-[0_0_15px_rgba(99,102,241,0.4)] hover:shadow-[0_0_25px_rgba(99,102,241,0.6)] font-bold tracking-wide hover:-translate-y-0.5">
+               Manage Policy
+             </button>
+             <button onClick={cancelPlan} className="text-sm px-6 py-4 bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-slate-700 hover:border-red-500/50 rounded-2xl transition-all font-bold tracking-wide">
+               Cancel Cover
+             </button>
+           </div>
          </div>
       )}
 
@@ -184,7 +301,7 @@ export default function Dashboard() {
              {userData.activePlan !== 'None' && <button onClick={() => setIsSelectingPlan(false)} className="text-sm bg-slate-800/80 backdrop-blur border border-slate-600 px-4 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700 transition-colors font-bold">Cancel</button>}
            </div>
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-             {[{name: 'Basic', price: 10, cov: 300, max: 1}, {name: 'Pro', price: 25, cov: 800, max: 2}, {name: 'Elite', price: 40, cov: 1500, max: 3}].map(plan => (
+             {[{name: 'Basic', price: dynamicBasePremium * 1, cov: 300, max: 1}, {name: 'Pro', price: dynamicBasePremium * 2, cov: 800, max: 2}, {name: 'Elite', price: dynamicBasePremium * 3, cov: 1500, max: 3}].map(plan => (
                <div key={plan.name} className={`bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border transition-all duration-300 shadow-xl ${userData.activePlan === plan.name ? 'border-indigo-500 ring-2 ring-indigo-500/50 transform scale-[1.02]' : 'border-slate-700 hover:border-indigo-400 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(99,102,241,0.2)]'}`}>
                  <div className="flex justify-between items-start">
                    <h3 className="text-xl font-black text-white mb-2">{plan.name} Package</h3>
@@ -203,7 +320,7 @@ export default function Dashboard() {
                    </div>
                  </div>
                  <button onClick={() => subscribePlan(plan.name)} disabled={userData.activePlan === plan.name} className="w-full bg-gradient-to-r from-slate-700 to-slate-800 hover:from-indigo-500 hover:to-purple-600 disabled:from-slate-800 disabled:to-slate-900 disabled:text-slate-500 disabled:cursor-not-allowed text-white rounded-xl py-4 font-bold transition-all border border-slate-600 hover:border-indigo-400 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] tracking-wide">
-                    {userData.activePlan === plan.name ? 'Active' : `Select ${plan.name}`}
+                    {userData.activePlan === plan.name ? 'Active' : userData.activePlan !== 'None' ? `Upgrade to ${plan.name}` : `Subscribe to ${plan.name}`}
                  </button>
                </div>
              ))}
@@ -228,27 +345,37 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              {/* 4. Fraud Detection UI Restyled */}
+              {isPolicyPending && (
+                <div className="mb-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center gap-3 overflow-hidden shadow-[0_0_15px_rgba(249,115,22,0.15)] relative animate-in slide-in-from-top-4 fade-in">
+                  <Clock className="w-6 h-6 text-orange-400 shrink-0" />
+                  <div>
+                     <div className="text-sm font-bold text-orange-400">Policy Activation Pending</div>
+                     <div className="text-xs text-slate-300 mt-0.5">Your coverage is subject to a 24-hour verification hold to prevent retroactive fraud. Claims simulated now will be blocked.</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Live Sensor Feed UI */}
               <div className="bg-slate-800/40 backdrop-blur-md p-6 rounded-3xl border border-slate-700/50 mb-8 shadow-inner relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 pointer-events-none"></div>
                 
                 <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-700/50 relative z-10">
-                   <span className="text-[11px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2"><Activity className="w-4 h-4 text-purple-400"/> Interactive Environment Modifiers</span>
-                   <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-500/20 px-3 py-1 rounded-full text-emerald-400 border border-emerald-500/30">Admin Sandbox</span>
+                   <span className="text-[11px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2"><Activity className="w-4 h-4 text-purple-400 animate-pulse"/> Live Oracle Sensors</span>
+                   <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-500/20 px-3 py-1 rounded-full text-emerald-400 border border-emerald-500/30">Streaming Data</span>
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
-                  <ValidationToggle label="Worker Active" state={env.active} setter={(v) => setEnv({...env, active: v})} icon={Smartphone} color="emerald" desc="Simulate online app state" />
-                  <ValidationToggle label="GPS Validated" state={env.gps} setter={(v) => setEnv({...env, gps: v})} icon={Navigation} color="blue" desc="Simulate proper geometry fix" />
-                  <ValidationToggle label="AI Telemetry" state={env.telemetry} setter={(v) => setEnv({...env, telemetry: v})} icon={Activity} color="purple" desc="Simulate valid micro-movements" />
+                  <LiveSensorWidget label="Browser GPS" value={liveGps ? `${liveGps.lat.toFixed(4)}, ${liveGps.lon.toFixed(4)}` : 'Searching...'} status={!!liveGps} icon={Navigation} color="blue" />
+                  <LiveSensorWidget label="Open-Meteo Data" value={liveWeather ? `${liveWeather.rain}mm Precip` : 'Fetching...'} status={!!liveWeather} icon={CloudRain} color="orange" />
+                  <LiveSensorWidget label="AI Biomechanics" value={`Var: ${telemetryVariance.toFixed(3)}`} status={telemetryVariance > 0.5} icon={Smartphone} color="purple" desc={telemetryVariance > 0.5 ? 'Active' : 'Static'} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <TriggerButton icon={CloudRain} label="Heavy Rain" desc="Flood delay" onClick={() => handleSimulate('Heavy Rain')} disabled={loading || userData.claimsThisWeek >= userData.maxClaimsPerWeek} color="bg-gradient-to-br from-blue-500 to-cyan-500" />
-                <TriggerButton icon={Wind} label="High AQI" desc="Hazard pay" onClick={() => handleSimulate('High AQI')} disabled={loading || userData.claimsThisWeek >= userData.maxClaimsPerWeek} color="bg-gradient-to-br from-orange-500 to-amber-500" />
-                <TriggerButton icon={AlertTriangle} label="Curfew" desc="Safe restriction" onClick={() => handleSimulate('Curfew')} disabled={loading || userData.claimsThisWeek >= userData.maxClaimsPerWeek} color="bg-gradient-to-br from-red-500 to-rose-600" />
-                <TriggerButton icon={ServerCrash} label="App Crash" desc="Platform down" onClick={() => handleSimulate('App Crash')} disabled={loading || userData.claimsThisWeek >= userData.maxClaimsPerWeek} color="bg-gradient-to-br from-indigo-500 to-purple-600" />
+                <TriggerButton icon={CloudRain} label="Heavy Rain" desc="Checks Open-Meteo" onClick={() => handleSimulate('Heavy Rain')} disabled={loading || isPolicyPending || userData.claimsThisWeek >= userData.maxClaimsPerWeek} color="bg-gradient-to-br from-blue-500 to-cyan-500" />
+                <TriggerButton icon={Wind} label="High AQI" desc="Checks Open-Meteo" onClick={() => handleSimulate('High AQI')} disabled={loading || isPolicyPending || userData.claimsThisWeek >= userData.maxClaimsPerWeek} color="bg-gradient-to-br from-orange-500 to-amber-500" />
+                <TriggerButton icon={AlertTriangle} label="Curfew" desc="Safe restriction" onClick={() => handleSimulate('Curfew')} disabled={loading || isPolicyPending || userData.claimsThisWeek >= userData.maxClaimsPerWeek} color="bg-gradient-to-br from-red-500 to-rose-600" />
+                <TriggerButton icon={ServerCrash} label="App Crash" desc="Platform down" onClick={() => handleSimulate('App Crash')} disabled={loading || isPolicyPending || userData.claimsThisWeek >= userData.maxClaimsPerWeek} color="bg-gradient-to-br from-indigo-500 to-purple-600" />
               </div>
 
               {/* 7. Claim Timeline Loading Bar */}
@@ -475,29 +602,34 @@ function ValidationResultRow({ label, status, valPass, valFail, highlightFail })
   );
 }
 
-function ValidationToggle({ label, state, setter, icon: Icon, color, desc }) {
+function LiveSensorWidget({ label, value, status, icon: Icon, color, desc }) {
   const colorMap = {
-     emerald: 'from-emerald-400 to-emerald-500 shadow-emerald-500/50',
-     blue: 'from-blue-400 to-blue-500 shadow-blue-500/50',
-     purple: 'from-purple-400 to-purple-500 shadow-purple-500/50',
+     emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+     blue: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+     purple: 'text-purple-400 bg-purple-500/10 border-purple-500/30',
+     orange: 'text-orange-400 bg-orange-500/10 border-orange-500/30'
   };
-  const bgClass = colorMap[color];
+  const theme = colorMap[color] || colorMap.blue;
 
   return (
-    <label className="flex flex-col gap-2.5 p-4 rounded-2xl bg-slate-900/80 border border-slate-700/50 cursor-pointer group hover:border-slate-500 hover:bg-slate-800 transition-all hover:shadow-xl relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full blur-xl group-hover:bg-white/10 transition-colors"></div>
+    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-slate-900/80 border border-slate-700/50 shadow-inner relative overflow-hidden group hover:border-slate-500 transition-colors">
+      <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full blur-xl group-hover:bg-white/10 transition-colors pointer-events-none"></div>
       <div className="flex items-center justify-between relative z-10">
-        <span className="text-slate-300 text-sm font-black group-hover:text-white transition-colors flex items-center gap-2">
-           <div className={`p-1.5 rounded-lg bg-slate-800 shadow-inner group-hover:scale-110 transition-transform`}><Icon className={`w-4 h-4 text-${color}-400 drop-shadow-md`}/></div>
+        <span className="text-slate-300 text-sm font-black flex items-center gap-2">
+           <div className={`p-1.5 rounded-lg bg-slate-800 shadow-inner`}><Icon className={`w-4 h-4 ${theme.split(' ')[0]} drop-shadow-md`}/></div>
            {label}
         </span>
-        <div className={`w-12 h-6 rounded-full relative transition-colors shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] ${state ? `bg-gradient-to-r ${colorMap[color].split(' ')[0]} ${colorMap[color].split(' ')[1]}` : 'bg-slate-800 border border-slate-700'}`}>
-           <input type="checkbox" className="sr-only" checked={state} onChange={e => setter(e.target.checked)} />
-           <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow-md ${state ? 'left-0.5 translate-x-6' : 'left-0.5 translate-x-0 bg-slate-400'}`}></div>
-        </div>
+        {status ? (
+           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+        ) : (
+           <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+        )}
       </div>
-      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight relative z-10">{desc}</span>
-    </label>
+      <div className="mt-1 relative z-10 flex flex-col">
+         <span className={`text-base font-black tracking-tight truncate ${status ? 'text-white' : 'text-slate-500'}`}>{value}</span>
+         {desc && <span className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 inline-block px-1.5 py-0.5 rounded border ${theme} w-fit`}>{desc}</span>}
+      </div>
+    </div>
   );
 }
 

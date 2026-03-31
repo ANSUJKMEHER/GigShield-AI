@@ -5,6 +5,7 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   city: { type: String, required: true },
+  zone: { type: String, default: 'General' },
   platform: { type: String, required: true },
   riskScore: { type: Number, default: 0 },
   activePlan: { 
@@ -12,6 +13,10 @@ const UserSchema = new mongoose.Schema({
     enum: ['None', 'Basic', 'Pro', 'Elite'],
     default: 'None'
   },
+  location: { lat: Number, lon: Number },
+  workingHours: { start: String, end: String },
+  policyActiveAt: { type: Date },
+  pastClaimsCount: { type: Number, default: 0 },
   coverage: { type: Number, default: 0 },
   coverageRemaining: { type: Number, default: 0 },
   premium: { type: Number, default: 0 },

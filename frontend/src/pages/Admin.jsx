@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, FileText, AlertOctagon, IndianRupee, RefreshCw, Activity, ShieldCheck, TrendingUp } from 'lucide-react';
+import { Users, FileText, AlertOctagon, IndianRupee, RefreshCw, Activity, ShieldCheck, TrendingUp, Zap, CloudRain, Wind } from 'lucide-react';
 
 export default function Admin() {
   const [data, setData] = useState(null);
@@ -9,11 +9,42 @@ export default function Admin() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get('https://gigshield-backend-c1z7.onrender.com/api/admin/stats');
+      const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
+      const { data } = await axios.get(`${API_URL}/api/admin/stats`);
       setData(data);
     } catch (error) {
       console.error(error);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const triggerWebhook = async (city, zone, triggerEvent, eventSeverity) => {
+    if (!confirm(`Are you sure you want to trigger a ${triggerEvent} disruption in ${city}?`)) return;
+    setLoading(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
+      const res = await axios.post(`${API_URL}/api/insurance/webhook/trigger-disruption`, {
+        city, zone, triggerEvent, eventSeverity
+      });
+      alert(`Success! ${res.data.stats.claimsCreated} zero-touch claims auto-processed for affected workers in ${city}. Total Payout: ₹${res.data.stats.totalPayout}`);
+      fetchStats();
+    } catch (err) {
+      alert('Failed to trigger webhook');
+      setLoading(false);
+    }
+  };
+
+  const resetWeekly = async () => {
+    if (!confirm('Are you sure you want to reset the weekly claims count for all active users?')) return;
+    setLoading(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
+      const res = await axios.post(`${API_URL}/api/admin/reset-weekly`);
+      alert(res.data.message);
+      fetchStats();
+    } catch (err) {
+      alert('Failed to reset weekly limits');
       setLoading(false);
     }
   };
@@ -32,12 +63,20 @@ export default function Admin() {
           </h1>
           <p className="text-slate-400 mt-1">Platform overview and aggregate statistics</p>
         </div>
-        <button 
-          onClick={fetchStats} disabled={loading}
-          className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 w-full sm:w-auto rounded-lg transition-colors border border-slate-700 disabled:opacity-50 font-medium shadow-sm"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <button 
+            onClick={resetWeekly} disabled={loading}
+            className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-orange-500/20 text-slate-300 hover:text-orange-400 px-4 py-2.5 w-full sm:w-auto rounded-lg transition-colors border border-slate-700 hover:border-orange-500/50 disabled:opacity-50 font-medium shadow-sm text-sm"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Reset Weekly Limits
+          </button>
+          <button 
+            onClick={fetchStats} disabled={loading}
+            className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 w-full sm:w-auto rounded-lg transition-colors border border-slate-700 disabled:opacity-50 font-medium shadow-sm text-sm"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -46,6 +85,19 @@ export default function Admin() {
         <StatCard title="Total Claims" value={data.claimsCount} icon={FileText} color="text-blue-400" />
         <StatCard title="Fraud Blocked" value={data.fraudAttempts} icon={AlertOctagon} color="text-red-400" />
         <StatCard title="Total Payouts" className="col-span-2 lg:col-span-1" value={`₹${data.totalPayout}`} icon={IndianRupee} color="text-emerald-500" />
+      </div>
+
+      {/* Zero-Touch Claim Triggers */}
+      <div className="bg-slate-900 rounded-2xl border border-indigo-500/50 shadow-[0_0_30px_rgba(99,102,241,0.1)] p-5 sm:p-6 mt-6">
+        <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
+          <Zap className="w-5 h-5 text-indigo-400"/> Zero-Touch Parametric Webhooks (Mock API)
+        </h2>
+        <p className="text-sm text-slate-400 mb-6">Simulate automated triggers. The engine will find all active workers in the affected zone and instantly process zero-touch claims.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <WebhookButton icon={CloudRain} label="Heavy Rain (Mumbai)" desc="Auto-claim for Mumbai, Low-Lying" onClick={() => triggerWebhook('Mumbai', 'Flood Prone (Dharavi)', 'Heavy Rain', '99mm Rainfall Alert')} loading={loading} color="bg-blue-500/20 text-blue-400 border-blue-500/30" hoverColor="hover:bg-blue-500 hover:text-white" />
+          <WebhookButton icon={Wind} label="High AQI (Delhi)" desc="Hazard payout for Delhi workers" onClick={() => triggerWebhook('Delhi', 'General', 'High AQI', 'AQI > 450 - Hazardous')} loading={loading} color="bg-orange-500/20 text-orange-400 border-orange-500/30" hoverColor="hover:bg-orange-500 hover:text-white" />
+          <WebhookButton icon={AlertOctagon} label="Curfew (Bangalore)" desc="Safe restriction trigger" onClick={() => triggerWebhook('Bangalore', 'General', 'Curfew', 'Section 144 Imposed')} loading={loading} color="bg-red-500/20 text-red-400 border-red-500/30" hoverColor="hover:bg-red-500 hover:text-white" />
+        </div>
       </div>
 
       {/* Payout Metric Graph */}
@@ -163,5 +215,23 @@ function StatCard({ title, value, icon: Icon, color, className = "" }) {
       </div>
       <div className="absolute right-0 bottom-0 top-0 w-12 sm:w-16 bg-gradient-to-l from-slate-800/50 to-transparent opacity-50 pointer-events-none"></div>
     </div>
+  );
+}
+
+function WebhookButton({ icon: Icon, label, desc, onClick, loading, color, hoverColor }) {
+  return (
+    <button 
+      onClick={onClick}
+      disabled={loading}
+      className={`border rounded-xl p-4 text-left transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group ${color} ${hoverColor}`}
+    >
+      <div className="flex items-center gap-3">
+        <Icon className="w-6 h-6 shrink-0" />
+        <div>
+          <div className="font-bold text-sm">{label}</div>
+          <div className="text-[10px] opacity-80 mt-0.5 uppercase tracking-wide">{desc}</div>
+        </div>
+      </div>
+    </button>
   );
 }

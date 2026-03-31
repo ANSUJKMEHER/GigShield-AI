@@ -21,5 +21,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/insurance', insuranceRoutes);
 app.use('/api/admin', adminRoutes);
 
+const { startAutoTrigger } = require('./utils/autoTriggerTask');
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    startAutoTrigger(); // BOOT THE ZERO-TOUCH BACKGROUND ORACLE
+});

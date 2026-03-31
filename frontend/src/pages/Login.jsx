@@ -12,15 +12,31 @@ export default function Login() {
     email: 'demo@gigshield.ai',
     password: 'password123',
     city: 'Mumbai',
-    platform: 'Zomato'
+    platform: 'Zomato',
+    zone: 'Flood Prone (Dharavi)',
+    workingHoursStart: '09:00',
+    workingHoursEnd: '21:00',
+    lat: null,
+    lon: null
   });
+
+  // Fetch coordinates for zero-touch routing on load
+  useState(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setFormData(f => ({ ...f, lat: pos.coords.latitude, lon: pos.coords.longitude })),
+        () => console.log('Location access denied or failed')
+      );
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
-      const { data } = await axios.post(`https://gigshield-backend-c1z7.onrender.com${endpoint}`, formData);
+      const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
+      const { data } = await axios.post(`${API_URL}${endpoint}`, formData);
       localStorage.setItem('user', JSON.stringify(data.user));
       navigate('/dashboard');
     } catch (error) {
@@ -77,6 +93,28 @@ export default function Login() {
                     <option value="Uber">Uber</option>
                   </select>
                 </div>
+                <select
+                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:border-indigo-500 transition-all mt-2"
+                  value={formData.zone}
+                  onChange={e => setFormData({...formData, zone: e.target.value})}
+                  required
+                >
+                  <option value="General">General / Unknown</option>
+                  <option value="Flood Prone (Dharavi)">Flood Prone / Low-Lying</option>
+                  <option value="Safe (High Ground)">Safe / High Ground</option>
+                  <option value="High Crime Rate">High Crime Rate Area</option>
+                </select>
+                
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1 block">Expected Shift Start</label>
+                    <input type="time" className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500" value={formData.workingHoursStart} onChange={e => setFormData({...formData, workingHoursStart: e.target.value})} required/>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1 block">Expected Shift End</label>
+                    <input type="time" className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-indigo-500" value={formData.workingHoursEnd} onChange={e => setFormData({...formData, workingHoursEnd: e.target.value})} required/>
+                  </div>
+                </div>
               </>
             )}
             
@@ -111,11 +149,11 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-3">
             <button 
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-slate-400 hover:text-white transition-colors"
+              className="text-sm font-bold text-slate-400 hover:text-white transition-colors block w-full"
             >
               {isLogin ? "Need coverage? Sign up instead" : "Already protected? Log in"}
             </button>
