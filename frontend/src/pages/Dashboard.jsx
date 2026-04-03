@@ -1,8 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { CloudRain, Wind, AlertTriangle, Shield, Wallet, Activity, IndianRupee, Bell, AlertCircle, FileText, Smartphone, ServerCrash, Navigation, CheckCircle2, XCircle, MapPin, Loader2, PlayCircle, Zap, TrendingDown, Clock, ShieldCheck } from 'lucide-react';
+import { CloudRain, Wind, AlertTriangle, Shield, Wallet, Activity, IndianRupee, Bell, AlertCircle, FileText, Smartphone, ServerCrash, Navigation, CheckCircle2, XCircle, MapPin, Loader2, PlayCircle, Zap, TrendingDown, Clock, ShieldCheck, UserPlus, CreditCard, BotMessageSquare, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import anime from 'animejs/lib/anime.es.js';
+import MapTracker from '../components/MapTracker';
+import WeatherWidget from '../components/WeatherWidget';
+
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  in: { opacity: 1, y: 0 },
+  out: { opacity: 0, y: -20 },
+};
 
 export default function Dashboard() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const currentTab = searchParams.get('tab') || 'home';
+
   const [userData, setUserData] = useState(null);
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -11,6 +26,7 @@ export default function Dashboard() {
   
   // LIVE SENSORS STATE
   const [liveGps, setLiveGps] = useState(null);
+  const [locationHistory, setLocationHistory] = useState([]);
   const [liveWeather, setLiveWeather] = useState(null);
   const [telemetryVariance, setTelemetryVariance] = useState(0.00);
 
@@ -20,6 +36,8 @@ export default function Dashboard() {
   
   const [currentCity, setCurrentCity] = useState('');
   const [currentRiskScore, setCurrentRiskScore] = useState(null);
+  const [animatedRisk, setAnimatedRisk] = useState(0);
+  const riskRef = useRef({ value: 0 });
 
   const fetchUser = async () => {
     try {
@@ -34,7 +52,7 @@ export default function Dashboard() {
       // Fetch dynamic base premium
       try {
         const riskRes = await axios.get(`${API_URL}/api/insurance/risk/${data.user.city}?zone=${data.user.zone || 'General'}`);
-        if (riskRes.data && riskRes.data.basePremium) {
+        if (riskRes.data && riskRes.data.basePremium !== undefined) {
           setDynamicBasePremium(riskRes.data.basePremium);
         }
       } catch (err) { console.error('Error fetching risk score', err); }
@@ -78,6 +96,11 @@ export default function Dashboard() {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           setLiveGps({ lat, lon });
+          setLocationHistory(prev => {
+             const newHist = [...prev, {lat, lon, timestamp: Date.now()}];
+             if (newHist.length > 50) return newHist.slice(newHist.length - 50);
+             return newHist;
+          });
 
           try {
             // Reverse geocode to get actual city
@@ -92,17 +115,22 @@ export default function Dashboard() {
             const fetchCity = actualCity || currentCity || 'General';
             const riskRes = await axios.get(`${API_URL}/api/insurance/risk/${fetchCity}?zone=General`);
             if (riskRes.data) {
-              setDynamicBasePremium(riskRes.data.basePremium);
-              setCurrentRiskScore(riskRes.data.riskScore);
+              setDynamicBasePremium(riskRes.data.basePremium || 10);
+              setCurrentRiskScore(riskRes.data.riskScore || 0.2);
             }
           } catch (e) {
              console.error("Geocoding or Risk Fetch failed", e);
           }
 
           try {
-            const res = await axios.get(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=precipitation,weather_code`);
+            const res = await axios.get(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=precipitation,weather_code,temperature_2m,wind_speed_10m`);
             if (res.data?.current) {
-              setLiveWeather({ rain: res.data.current.precipitation, weather_code: res.data.current.weather_code });
+              setLiveWeather({ 
+                 rain: res.data.current.precipitation, 
+                 weather_code: res.data.current.weather_code,
+                 temperature: res.data.current.temperature_2m,
+                 windspeed: res.data.current.wind_speed_10m
+              });
             }
           } catch (e) {
             console.error("Weather API failed", e);
@@ -168,10 +196,24 @@ export default function Dashboard() {
     }
   };
 
-  if (!userData) return null;
+  const displayCity = currentCity || userData?.city;
+  const displayRisk = currentRiskScore !== null ? currentRiskScore : userData?.riskScore;
 
-  const displayCity = currentCity || userData.city;
-  const displayRisk = currentRiskScore !== null ? currentRiskScore : userData.riskScore;
+  // Animate risk score when it changes
+  useEffect(() => {
+    if (displayRisk === null || displayRisk === undefined) return;
+    anime({
+      targets: riskRef.current,
+      value: displayRisk,
+      easing: 'easeOutExpo',
+      duration: 1500,
+      update: function() {
+        setAnimatedRisk(riskRef.current.value);
+      }
+    });
+  }, [displayRisk]);
+
+  if (!userData) return null;
 
   const riskLabel = displayRisk >= 0.8 ? 'High' : displayRisk >= 0.5 ? 'Medium' : 'Low';
   const riskColor = displayRisk >= 0.8 ? 'text-red-400' : displayRisk >= 0.5 ? 'text-orange-400' : 'text-emerald-400';
@@ -183,7 +225,7 @@ export default function Dashboard() {
   const isPolicyPending = userData.policyActiveAt && new Date() < new Date(userData.policyActiveAt);
 
   return (
-    <div className="space-y-6 animate-in fade-in py-6 pb-20 relative font-sans">
+    <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.4 }} className="space-y-6 py-6 pb-safe font-sans sm:pb-8">
       
       {/* 6. Claim Animation Popup */}
       {showClaimPopup && simulationResult?.success && (
@@ -201,28 +243,70 @@ export default function Dashboard() {
       )}
 
       {/* Header & Smart Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {currentTab === 'home' && (
+      <>
+        <div className="mb-6">
+           <WeatherWidget weatherData={liveWeather} city={displayCity} />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className={`lg:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 md:p-8 border border-slate-700/50 relative overflow-hidden transition-all duration-500 ${riskShadow}`}>
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none"></div>
           
           <div className="relative z-10">
             <h1 className="text-3xl font-black text-white flex items-center gap-3 drop-shadow-md">
-              Dashboard <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Overview</span>
+              {new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">{userData.name} 👋</span>
             </h1>
-            <p className="text-slate-400 mt-2 font-medium text-lg">Platform: <span className="text-white backdrop-blur-sm bg-white/5 px-2 py-0.5 rounded-md border border-white/10">{userData.platform}</span> | User: {userData.name} | Location: {displayCity}</p>
+            <p className="text-slate-400 mt-2 font-medium text-lg">Platform: <span className="text-white backdrop-blur-sm bg-white/5 px-2 py-0.5 rounded-md border border-white/10">{userData.platform}</span> | Location: {displayCity}</p>
+            <div className="mt-3 flex items-center gap-2">
+               <span className="text-xs font-black uppercase tracking-widest text-slate-500">Total Earned</span>
+               <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">₹{userData.totalPayouts || 0}</span>
+            </div>
           </div>
           
           <div className="relative z-10 flex flex-col items-start sm:items-end w-full sm:w-auto mt-4 sm:mt-0">
-             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Live Threat ({displayCity})</div>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Live Threat ({displayCity})</div>
              <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900/50 backdrop-blur-md border border-slate-700/50 shadow-inner ${riskColor} relative`}>
                 <div className={`absolute inset-0 bg-current opacity-[0.03] rounded-2xl animate-pulse`}></div>
                 <Activity className="w-6 h-6 shrink-0 z-10" />
                 <div className="z-10 flex flex-col">
                   <span className="text-[10px] font-bold uppercase opacity-80 leading-none tracking-widest">Risk Score</span>
-                  <span className="text-2xl font-black leading-none mt-1">{displayRisk.toFixed(2)} <span className="text-sm">({riskLabel})</span></span>
+                  <span className="text-2xl font-black leading-none mt-1">{animatedRisk.toFixed(2)} <span className="text-sm">({riskLabel})</span></span>
                 </div>
              </div>
           </div>
+        </div>
+
+        {/* Current Plan Banner for Home Page */}
+        <div className="lg:col-span-3 bg-gradient-to-r from-indigo-900/60 to-purple-900/60 rounded-2xl p-6 border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between shadow-[0_0_30px_rgba(99,102,241,0.15)] relative overflow-hidden backdrop-blur-md">
+           <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/20 blur-[60px] rounded-full pointer-events-none"></div>
+           <div className="flex items-center gap-4 relative z-10 w-full sm:w-auto mb-4 sm:mb-0">
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 shadow-inner ${userData.activePlan !== 'None' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                 <ShieldCheck className="w-8 h-8 drop-shadow-md" />
+              </div>
+              <div>
+                 <div className="text-xs font-black text-indigo-300 uppercase tracking-widest mb-0.5">Current Policy Protection</div>
+                 {userData.activePlan !== 'None' ? (
+                    <div className="text-2xl font-black text-white flex items-center gap-2">
+                       {userData.activePlan} Plan <span className="text-sm px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/30 uppercase tracking-widest">Active</span>
+                    </div>
+                 ) : (
+                    <div className="text-2xl font-black text-slate-300">No Active Coverage</div>
+                 )}
+              </div>
+           </div>
+           {userData.activePlan === 'None' && (
+              <button 
+                onClick={() => {
+                   const searchParams = new URLSearchParams(window.location.search);
+                   searchParams.set('tab', 'plans');
+                   window.history.pushState(null, '', `?${searchParams.toString()}`);
+                   window.dispatchEvent(new Event('popstate'));
+                }} 
+                className="relative z-10 px-6 py-3 bg-white text-slate-900 font-black rounded-xl hover:scale-105 transition-transform uppercase tracking-wider text-sm shadow-xl w-full sm:w-auto"
+              >
+                 Get Covered
+              </button>
+           )}
         </div>
 
         {/* 8. Smart Alerts UI */}
@@ -261,8 +345,70 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      
+      {/* How It Works Pipeline */}
+      <div className="bg-slate-900/60 backdrop-blur-xl rounded-3xl p-6 md:p-8 border border-slate-700/50 shadow-xl relative overflow-hidden">
+         <div className="absolute -top-20 -right-20 w-64 h-64 bg-purple-500/10 blur-[60px] rounded-full pointer-events-none"></div>
+         <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 relative z-10">How GigShield Works</h3>
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+            {[{step: '01', icon: UserPlus, title: 'Register & Profile', desc: 'Sign up with your city, platform, and risk zone. Our AI calculates your unique threat profile.', color: 'from-indigo-500 to-blue-600'},
+              {step: '02', icon: CreditCard, title: 'Choose Coverage', desc: 'Pick Basic, Pro, or Elite. Dynamic pricing adjusts based on your location\'s live risk data.', color: 'from-purple-500 to-pink-600'},
+              {step: '03', icon: BotMessageSquare, title: 'Auto-Claim', desc: 'When a disruption hits, our oracles detect it instantly. Payout lands in your account — zero paperwork.', color: 'from-emerald-500 to-teal-600'}
+            ].map((item, i) => (
+               <div key={i} className="flex items-start gap-4 group">
+                  <div className={`w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:-rotate-3 transition-all border border-white/10`}>
+                     <item.icon className="w-6 h-6 text-white drop-shadow-md" />
+                  </div>
+                  <div>
+                     <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Step {item.step}</div>
+                     <div className="text-base font-bold text-white mb-1">{item.title}</div>
+                     <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
+                  </div>
+               </div>
+            ))}
+         </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard title="Active Plan" value={userData.activePlan !== 'None' ? userData.activePlan : 'None'} icon={Shield} color="text-emerald-400" />
+        <StatCard title="Weekly Premium" value={`₹${userData.premium || 0}`} icon={Wallet} color="text-indigo-400" />
+        <StatCard title="Total Coverage" value={`₹${userData.coverage || 0}`} icon={Shield} color="text-purple-400" />
+        <StatCard title="Coverage Left" value={`₹${userData.coverageRemaining || 0}`} icon={Activity} color="text-pink-400" />
+        <StatCard title="Total Payouts" className="col-span-2 lg:col-span-1" value={`₹${userData.totalPayouts || 0}`} icon={IndianRupee} color="text-blue-400" />
+      </div>
+
+      {/* Recent Activity Feed */}
+      <div className="bg-slate-900/60 backdrop-blur-xl rounded-3xl p-6 border border-slate-700/50 shadow-xl relative overflow-hidden">
+         <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 via-purple-500 to-emerald-500 rounded-l-3xl"></div>
+         <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-5 pl-4">Recent Activity</h3>
+         <div className="space-y-3 pl-4">
+            {claims.length === 0 ? (
+               <div className="text-sm text-slate-500 py-6 text-center">No activity yet. Subscribe to a plan and trigger your first simulation!</div>
+            ) : (
+               claims.slice(0, 4).map((claim, i) => (
+                  <div key={claim._id} className="flex items-center gap-4 p-3 rounded-xl bg-slate-800/30 border border-slate-700/30 hover:bg-slate-800/60 transition-colors group">
+                     <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center shadow-inner ${claim.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {claim.status === 'Approved' ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                     </div>
+                     <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-white truncate">{claim.triggerEvent}</div>
+                        <div className="text-[10px] text-slate-500 font-medium">{new Date(claim.createdAt).toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'})} · {claim.city}</div>
+                     </div>
+                     <div className={`text-lg font-black ${claim.status === 'Approved' ? 'text-emerald-400' : 'text-red-400 line-through opacity-50'}`}>
+                        ₹{claim.payoutAmount}
+                     </div>
+                  </div>
+               ))
+            )}
+         </div>
+      </div>
+      </>
+      )}
 
       {/* 9. Weekly Usage Progress & Plans */}
+      {currentTab === 'plans' && (
+      <div className="space-y-6">
       {userData.activePlan !== 'None' && !isSelectingPlan && (
          <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-900/60 backdrop-blur-lg p-5 rounded-3xl border border-slate-700/50 shadow-lg relative overflow-hidden">
            <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/10 blur-[50px] rounded-full pointer-events-none"></div>
@@ -283,15 +429,6 @@ export default function Dashboard() {
          </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard title="Active Plan" value={userData.activePlan !== 'None' ? userData.activePlan : 'None'} icon={Shield} color="text-emerald-400" />
-        <StatCard title="Weekly Premium" value={`₹${userData.premium}`} icon={Wallet} color="text-indigo-400" />
-        <StatCard title="Total Coverage" value={`₹${userData.coverage}`} icon={Shield} color="text-purple-400" />
-        <StatCard title="Coverage Left" value={`₹${userData.coverageRemaining}`} icon={Activity} color="text-pink-400" />
-        <StatCard title="Total Payouts" className="col-span-2 lg:col-span-1" value={`₹${userData.totalPayouts}`} icon={IndianRupee} color="text-blue-400" />
-      </div>
-
       {/* Plans Section */}
       {(userData.activePlan === 'None' || isSelectingPlan) && (
         <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-8 border border-slate-700/50 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-500">
@@ -301,7 +438,7 @@ export default function Dashboard() {
              {userData.activePlan !== 'None' && <button onClick={() => setIsSelectingPlan(false)} className="text-sm bg-slate-800/80 backdrop-blur border border-slate-600 px-4 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700 transition-colors font-bold">Cancel</button>}
            </div>
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-             {[{name: 'Basic', price: dynamicBasePremium * 1, cov: 300, max: 1}, {name: 'Pro', price: dynamicBasePremium * 2, cov: 800, max: 2}, {name: 'Elite', price: dynamicBasePremium * 3, cov: 1500, max: 3}].map(plan => (
+             {[{name: 'Basic', price: (dynamicBasePremium || 10) * 1, cov: 300, max: 1}, {name: 'Pro', price: (dynamicBasePremium || 10) * 2, cov: 800, max: 2}, {name: 'Elite', price: (dynamicBasePremium || 10) * 3, cov: 1500, max: 3}].map(plan => (
                <div key={plan.name} className={`bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 border transition-all duration-300 shadow-xl ${userData.activePlan === plan.name ? 'border-indigo-500 ring-2 ring-indigo-500/50 transform scale-[1.02]' : 'border-slate-700 hover:border-indigo-400 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(99,102,241,0.2)]'}`}>
                  <div className="flex justify-between items-start">
                    <h3 className="text-xl font-black text-white mb-2">{plan.name} Package</h3>
@@ -328,7 +465,45 @@ export default function Dashboard() {
         </div>
       )}
 
-      {userData.activePlan !== 'None' && !isSelectingPlan && (
+      {/* Plan Comparison Table */}
+      <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 md:p-8 border border-slate-700/50 shadow-xl overflow-hidden">
+         <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Feature Comparison</h3>
+         <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+               <thead>
+                  <tr className="border-b border-slate-700/50">
+                     <th className="text-left text-slate-400 font-bold uppercase tracking-wider text-xs py-3 pr-4">Feature</th>
+                     <th className="text-center text-indigo-400 font-bold py-3 px-4">Basic</th>
+                     <th className="text-center text-purple-400 font-bold py-3 px-4">Pro</th>
+                     <th className="text-center text-emerald-400 font-bold py-3 px-4">Elite</th>
+                  </tr>
+               </thead>
+               <tbody className="text-slate-300">
+                  {[
+                     ['Weekly Premium', `₹${(dynamicBasePremium||10)*1}`, `₹${(dynamicBasePremium||10)*2}`, `₹${(dynamicBasePremium||10)*3}`],
+                     ['Max Coverage', '₹300', '₹800', '₹1,500'],
+                     ['Claims per Week', '1', '2', '3'],
+                     ['AI Fraud Detection', '✓', '✓', '✓'],
+                     ['GPS Verification', '✓', '✓', '✓'],
+                     ['Weather Oracle', '–', '✓', '✓'],
+                     ['Priority Payout', '–', '–', '✓'],
+                     ['Biomechanics Check', '–', '✓', '✓'],
+                  ].map(([feature, basic, pro, elite], i) => (
+                     <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                        <td className="py-3 pr-4 font-medium text-white text-xs">{feature}</td>
+                        <td className="py-3 px-4 text-center">{basic}</td>
+                        <td className="py-3 px-4 text-center">{pro}</td>
+                        <td className="py-3 px-4 text-center">{elite}</td>
+                     </tr>
+                  ))}
+               </tbody>
+            </table>
+         </div>
+      </div>
+      </div>
+      )}
+
+      {currentTab === 'claims' && userData.activePlan !== 'None' && !isSelectingPlan && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           
           {/* Triggers & Core Simulation Section */}
@@ -364,10 +539,13 @@ export default function Dashboard() {
                    <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-500/20 px-3 py-1 rounded-full text-emerald-400 border border-emerald-500/30">Streaming Data</span>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 mb-4">
                   <LiveSensorWidget label="Browser GPS" value={liveGps ? `${liveGps.lat.toFixed(4)}, ${liveGps.lon.toFixed(4)}` : 'Searching...'} status={!!liveGps} icon={Navigation} color="blue" />
                   <LiveSensorWidget label="Open-Meteo Data" value={liveWeather ? `${liveWeather.rain}mm Precip` : 'Fetching...'} status={!!liveWeather} icon={CloudRain} color="orange" />
                   <LiveSensorWidget label="AI Biomechanics" value={`Var: ${telemetryVariance.toFixed(3)}`} status={telemetryVariance > 0.5} icon={Smartphone} color="purple" desc={telemetryVariance > 0.5 ? 'Active' : 'Static'} />
+                </div>
+                <div className="relative z-10 mt-2">
+                   <MapTracker history={locationHistory} />
                 </div>
               </div>
 
@@ -566,7 +744,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 

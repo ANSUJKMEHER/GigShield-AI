@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home, FileText, Wallet, User as UserIcon, Users, AlertOctagon } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function BottomNav() {
   const location = useLocation();
@@ -18,12 +19,18 @@ export default function BottomNav() {
     { name: 'Home', path: '/dashboard', icon: Home },
     { name: 'Claims', path: '/dashboard?tab=claims', icon: FileText },
     { name: 'Plans', path: '/dashboard?tab=plans', icon: Wallet },
-    { name: 'Profile', path: '/dashboard?tab=profile', icon: UserIcon },
+    { name: 'Profile', path: '/profile', icon: UserIcon },
   ];
 
   return (
-    <div className="sm:hidden fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-xl border-t border-slate-700/50 z-[100] pb-2 sm:pb-0 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-      <div className="flex items-center justify-around px-2 py-2">
+    <motion.div 
+      initial={{ y: 100 }}
+      animate={{ y: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.1 }}
+      className="md:hidden fixed bottom-0 left-0 w-full bg-slate-900/95 backdrop-blur-xl border-t border-slate-700/50 z-[100] pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="flex items-center justify-around px-2 py-2 h-[72px]">
         {navLinks.map((link) => {
           const searchParams = new URLSearchParams(location.search);
           const linkParams = new URLSearchParams(link.path.split('?')[1] || '');
@@ -39,18 +46,21 @@ export default function BottomNav() {
             <Link 
               key={link.name} 
               to={link.path}
-              className={`flex flex-col items-center justify-between h-[52px] w-[70px] transition-all pt-1 ${isActive ? (isAdmin ? 'text-emerald-400' : 'text-indigo-400') : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex flex-col items-center justify-center w-full h-full relative ${isActive ? (isAdmin ? 'text-emerald-400' : 'text-indigo-400') : 'text-slate-500 hover:text-slate-300'}`}
             >
-              <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? (isAdmin ? 'bg-emerald-500/20 translate-y-[-2px]' : 'bg-indigo-500/20 translate-y-[-2px]') : ''}`}>
-                <Icon className={`w-5 h-5 ${isActive ? (isAdmin ? 'drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]') : ''}`} strokeWidth={isActive ? 2.5 : 2} />
-              </div>
-              <span className={`text-[9px] font-black tracking-widest uppercase transition-opacity ${isActive ? 'opacity-100' : 'opacity-80 mt-0.5'}`}>
+              <motion.div 
+                whileTap={{ scale: 0.9 }}
+                className={`p-2 rounded-2xl transition-all duration-300 z-10 ${isActive ? (isAdmin ? 'bg-emerald-500/20 translate-y-[-4px]' : 'bg-indigo-500/20 translate-y-[-4px]') : ''}`}
+              >
+                <Icon className={`w-6 h-6 ${isActive ? (isAdmin ? 'drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]' : 'drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]') : ''}`} strokeWidth={isActive ? 2.5 : 2} />
+              </motion.div>
+              <span className={`text-[10px] font-bold tracking-wider uppercase transition-all absolute bottom-1 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
                 {link.name}
               </span>
             </Link>
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }

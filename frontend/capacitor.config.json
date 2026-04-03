@@ -1,0 +1,6 @@
+{
+  "appId": "com.gigshield.app",
+  "appName": "GigShieldAI",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

@@ -1,5 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
+import BottomNav from './components/BottomNav';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
 import Dashboard from './pages/Dashboard';
@@ -23,13 +26,18 @@ function AdminRoute({ children }) {
   return children;
 }
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const hideNav = location.pathname === '/login' || location.pathname === '/admin-login' || location.pathname === '/';
+
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col pt-16 bg-slate-950 font-sans">
-        <Navbar />
-        <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-          <Routes>
+    <div className="min-h-screen flex flex-col bg-slate-950 font-sans w-full overflow-x-hidden">
+      {!hideNav && <Navbar />}
+      
+      {/* Adjust padding top dynamically based on whether top nav is visible */}
+      <main className={`flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 ${!hideNav ? 'pt-24 sm:pt-28 lg:pt-32 pb-24 md:pb-8' : ''}`}>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
             <Route path="/login" element={<Login />} />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -37,9 +45,22 @@ function App() {
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
-        </main>
-      </div>
-    </Router>
+        </AnimatePresence>
+      </main>
+
+      {/* Show BottomNav on mobile when logged in */}
+      {!hideNav && <div className="md:hidden"><BottomNav /></div>}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </ThemeProvider>
   );
 }
 

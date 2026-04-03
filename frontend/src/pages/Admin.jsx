@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Users, FileText, AlertOctagon, IndianRupee, RefreshCw, Activity, ShieldCheck, TrendingUp, Zap, CloudRain, Wind } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  in: { opacity: 1, y: 0 },
+  out: { opacity: 0, y: -20 },
+};
 
 export default function Admin() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [customCity, setCustomCity] = useState('');
 
   const fetchStats = async () => {
     setLoading(true);
@@ -54,7 +62,7 @@ export default function Admin() {
   if (!data) return null;
 
   return (
-    <div className="space-y-6 animate-in fade-in py-6 pb-20">
+    <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={{ duration: 0.4 }} className="space-y-6 py-6 pb-20">
       
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
         <div>
@@ -89,14 +97,23 @@ export default function Admin() {
 
       {/* Zero-Touch Claim Triggers */}
       <div className="bg-slate-900 rounded-2xl border border-indigo-500/50 shadow-[0_0_30px_rgba(99,102,241,0.1)] p-5 sm:p-6 mt-6">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
-          <Zap className="w-5 h-5 text-indigo-400"/> Zero-Touch Parametric Webhooks (Mock API)
-        </h2>
-        <p className="text-sm text-slate-400 mb-6">Simulate automated triggers. The engine will find all active workers in the affected zone and instantly process zero-touch claims.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-1">
+              <Zap className="w-5 h-5 text-indigo-400"/> Parametric Webhooks (Mock API)
+            </h2>
+            <p className="text-xs text-slate-400">Simulate triggers to test the auto-claim engine pipeline.</p>
+          </div>
+          <div className="w-full sm:w-64 relative">
+             <input type="text" placeholder="Target City (e.g. Mangalagiri)" className="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-2 focus:border-indigo-500 outline-none text-sm" value={customCity} onChange={e => setCustomCity(e.target.value)} />
+             <div className="absolute right-3 top-2.5 text-[10px] uppercase font-bold text-slate-500 pointer-events-none">Override</div>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <WebhookButton icon={CloudRain} label="Heavy Rain (Mumbai)" desc="Auto-claim for Mumbai, Low-Lying" onClick={() => triggerWebhook('Mumbai', 'Flood Prone (Dharavi)', 'Heavy Rain', '99mm Rainfall Alert')} loading={loading} color="bg-blue-500/20 text-blue-400 border-blue-500/30" hoverColor="hover:bg-blue-500 hover:text-white" />
-          <WebhookButton icon={Wind} label="High AQI (Delhi)" desc="Hazard payout for Delhi workers" onClick={() => triggerWebhook('Delhi', 'General', 'High AQI', 'AQI > 450 - Hazardous')} loading={loading} color="bg-orange-500/20 text-orange-400 border-orange-500/30" hoverColor="hover:bg-orange-500 hover:text-white" />
-          <WebhookButton icon={AlertOctagon} label="Curfew (Bangalore)" desc="Safe restriction trigger" onClick={() => triggerWebhook('Bangalore', 'General', 'Curfew', 'Section 144 Imposed')} loading={loading} color="bg-red-500/20 text-red-400 border-red-500/30" hoverColor="hover:bg-red-500 hover:text-white" />
+          <WebhookButton icon={CloudRain} label="Heavy Rain" desc={`Trigger for ${customCity || 'Mumbai'}`} onClick={() => triggerWebhook(customCity || 'Mumbai', 'General', 'Heavy Rain', '99mm Rainfall Alert')} loading={loading} color="bg-blue-500/20 text-blue-400 border-blue-500/30" hoverColor="hover:bg-blue-500 hover:text-white" />
+          <WebhookButton icon={Wind} label="High AQI" desc={`Trigger for ${customCity || 'Delhi'}`} onClick={() => triggerWebhook(customCity || 'Delhi', 'General', 'High AQI', 'AQI > 450 - Hazardous')} loading={loading} color="bg-orange-500/20 text-orange-400 border-orange-500/30" hoverColor="hover:bg-orange-500 hover:text-white" />
+          <WebhookButton icon={AlertOctagon} label="Curfew Imposed" desc={`Trigger for ${customCity || 'Bangalore'}`} onClick={() => triggerWebhook(customCity || 'Bangalore', 'General', 'Curfew', 'Section 144 Imposed')} loading={loading} color="bg-red-500/20 text-red-400 border-red-500/30" hoverColor="hover:bg-red-500 hover:text-white" />
         </div>
       </div>
 
@@ -197,7 +214,7 @@ export default function Admin() {
         </div>
       </div>
 
-    </div>
+    </motion.div>
   );
 }
 

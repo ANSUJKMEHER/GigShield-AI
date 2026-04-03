@@ -1,7 +1,275 @@
 @import "tailwindcss";
 
 @layer base {
-  body {
-    @apply bg-slate-950 text-white;
+  :root {
+    /* LIGHT MODE (Default) — Clean, Professional, No Glow */
+    --color-slate-950: #f1f5f9; /* Page Background — soft warm gray */
+    --color-slate-900: #ffffff; /* Card Background — pure white */
+    --color-slate-800: #e2e8f0; /* Borders, Inputs — light gray */
+    --color-slate-700: #cbd5e1; /* Hover Elements */
+    --color-slate-600: #94a3b8;
+    --color-slate-500: #64748b;
+    --color-slate-400: #475569; /* Muted Text — readable */
+    --color-slate-300: #334155; /* Normal Text — dark enough */
+    --color-white: #0f172a;     /* Main Headings — near black */
+
+    /* Override accent opacities for light mode */
+    --glow-opacity: 0;
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --card-shadow-lg: 0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    --blur-orb-opacity: 0;
+    --accent-bg-opacity: 0.06;
+    --border-opacity: 0.15;
   }
+
+  /* DARK MODE — Restore full cyber aesthetic */
+  html.dark {
+    --color-slate-950: #020617;
+    --color-slate-900: #0f172a;
+    --color-slate-800: #1e293b;
+    --color-slate-700: #334155;
+    --color-slate-600: #475569;
+    --color-slate-500: #64748b;
+    --color-slate-400: #94a3b8;
+    --color-slate-300: #cbd5e1;
+    --color-white: #ffffff;
+
+    --glow-opacity: 1;
+    --card-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    --card-shadow-lg: 0 10px 40px rgba(0,0,0,0.4);
+    --blur-orb-opacity: 1;
+    --accent-bg-opacity: 0.15;
+    --border-opacity: 0.5;
+  }
+
+  body {
+    @apply bg-slate-950 text-white transition-colors duration-500;
+  }
+}
+
+@layer utilities {
+  /* ===== LIGHT MODE PROFESSIONAL OVERRIDES ===== */
+
+  /* Kill ALL blur orbs / decorative blurs in light mode */
+  :root:not(.dark) .blur-\[80px\],
+  :root:not(.dark) .blur-\[60px\],
+  :root:not(.dark) .blur-\[100px\],
+  :root:not(.dark) .blur-\[40px\],
+  :root:not(.dark) .blur-\[50px\],
+  :root:not(.dark) .blur-\[20px\] {
+    display: none !important;
+  }
+
+  /* Kill all glow shadows in light mode */
+  html:not(.dark) [class*="shadow-\[0_0_"] {
+    box-shadow: var(--card-shadow) !important;
+  }
+
+  /* Kill drop-shadow glows */
+  html:not(.dark) [class*="drop-shadow-\["] {
+    filter: none !important;
+  }
+
+  /* Make all shadow-xl / shadow-2xl cards professional */
+  html:not(.dark) .shadow-xl {
+    box-shadow: var(--card-shadow) !important;
+  }
+  html:not(.dark) .shadow-2xl {
+    box-shadow: var(--card-shadow-lg) !important;
+  }
+  html:not(.dark) .shadow-lg {
+    box-shadow: var(--card-shadow) !important;
+  }
+  html:not(.dark) .shadow-inner {
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.04) !important;
+  }
+
+  /* Tone down all backdrop-blur in light mode (subtler) */
+  html:not(.dark) .backdrop-blur-xl {
+    backdrop-filter: blur(8px) !important;
+  }
+  html:not(.dark) .backdrop-blur-md {
+    backdrop-filter: blur(4px) !important;
+  }
+
+  /* Make gradient text still readable in light mode */
+  html:not(.dark) .bg-clip-text {
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+  }
+  html:not(.dark) .from-indigo-400.to-cyan-400,
+  html:not(.dark) .from-emerald-400.to-teal-400 {
+    --tw-gradient-from: #4f46e5 !important;
+    --tw-gradient-to: #0891b2 !important;
+  }
+
+  /* Soften colored accent backgrounds (e.g., bg-indigo-500/20 → much softer) */
+  html:not(.dark) [class*="bg-indigo-500/2"],
+  html:not(.dark) [class*="bg-indigo-500/1"] {
+    background-color: rgba(79, 70, 229, 0.05) !important;
+  }
+  html:not(.dark) [class*="bg-emerald-500/2"],
+  html:not(.dark) [class*="bg-emerald-500/1"] {
+    background-color: rgba(16, 185, 129, 0.05) !important;
+  }
+  html:not(.dark) [class*="bg-red-500/2"],
+  html:not(.dark) [class*="bg-red-500/1"] {
+    background-color: rgba(239, 68, 68, 0.05) !important;
+  }
+  html:not(.dark) [class*="bg-purple-500/2"],
+  html:not(.dark) [class*="bg-purple-500/1"] {
+    background-color: rgba(168, 85, 247, 0.04) !important;
+  }
+  html:not(.dark) [class*="bg-orange-500/2"],
+  html:not(.dark) [class*="bg-orange-500/1"] {
+    background-color: rgba(249, 115, 22, 0.05) !important;
+  }
+  html:not(.dark) [class*="bg-amber-500/1"] {
+    background-color: rgba(245, 158, 11, 0.05) !important;
+  }
+  html:not(.dark) [class*="bg-blue-500/1"],
+  html:not(.dark) [class*="bg-blue-500/2"] {
+    background-color: rgba(59, 130, 246, 0.05) !important;
+  }
+
+  /* Clean card borders in light mode */
+  html:not(.dark) [class*="border-indigo-500"],
+  html:not(.dark) [class*="border-emerald-500"],
+  html:not(.dark) [class*="border-purple-500"],
+  html:not(.dark) [class*="border-red-500"],
+  html:not(.dark) [class*="border-blue-500"],
+  html:not(.dark) [class*="border-orange-500"],
+  html:not(.dark) [class*="border-amber-500"] {
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* Make animate-pulse less aggressive in light mode */
+  html:not(.dark) .animate-pulse {
+    animation: pulse-light 3s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+  }
+
+  /* Professional white card surfaces */
+  html:not(.dark) .bg-slate-900\/80,
+  html:not(.dark) .bg-slate-900\/60,
+  html:not(.dark) .bg-slate-900\/50,
+  html:not(.dark) .bg-slate-900\/40 {
+    background-color: rgba(255, 255, 255, 0.85) !important;
+    border-color: rgba(0, 0, 0, 0.06) !important;
+  }
+
+  /* Clean input fields */
+  html:not(.dark) .bg-slate-800\/50 {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  /* Kill gradient backgrounds on cards in light */
+  html:not(.dark) [class*="from-indigo-900"],
+  html:not(.dark) [class*="from-purple-900"],
+  html:not(.dark) [class*="from-emerald-900"],
+  html:not(.dark) [class*="from-slate-900"] {
+    --tw-gradient-from: rgba(255, 255, 255, 0.9) !important;
+    --tw-gradient-to: rgba(248, 250, 252, 0.9) !important;
+  }
+
+  /* Buttons remain punchy */
+  html:not(.dark) .from-indigo-500.to-purple-600,
+  html:not(.dark) .from-indigo-500.to-indigo-600 {
+    --tw-gradient-from: #4f46e5 !important;
+    --tw-gradient-to: #7c3aed !important;
+  }
+
+  /* Fix the navbar in light mode */
+  html:not(.dark) nav.fixed {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+  }
+
+  /* Fix bottom nav in light mode */
+  html:not(.dark) .bg-slate-900\/95 {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  /* Table rows */
+  html:not(.dark) tr:hover {
+    background-color: rgba(0, 0, 0, 0.02) !important;
+  }
+
+  /* Leaflet map border */
+  html:not(.dark) .leaflet-container {
+    border-radius: 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* ===== TEXT VISIBILITY FIXES FOR LIGHT MODE ===== */
+
+  /* Light-tinted alert text (text-blue-100, text-red-100, text-amber-100) — invisible on white */
+  html:not(.dark) .text-blue-100 { color: #1e40af !important; }
+  html:not(.dark) .text-red-100 { color: #991b1b !important; }
+  html:not(.dark) .text-amber-100 { color: #92400e !important; }
+
+  /* Darken colored text for better contrast on light backgrounds */
+  html:not(.dark) .text-indigo-400 { color: #4338ca !important; }
+  html:not(.dark) .text-indigo-300 { color: #4f46e5 !important; }
+  html:not(.dark) .text-emerald-400 { color: #059669 !important; }
+  html:not(.dark) .text-emerald-300 { color: #059669 !important; }
+  html:not(.dark) .text-purple-400 { color: #7c3aed !important; }
+  html:not(.dark) .text-pink-400 { color: #db2777 !important; }
+  html:not(.dark) .text-blue-400 { color: #2563eb !important; }
+  html:not(.dark) .text-orange-400 { color: #ea580c !important; }
+  html:not(.dark) .text-amber-400 { color: #d97706 !important; }
+  html:not(.dark) .text-red-400 { color: #dc2626 !important; }
+  html:not(.dark) .text-cyan-400 { color: #0891b2 !important; }
+  html:not(.dark) .text-teal-400 { color: #0d9488 !important; }
+
+  /* Risk score box — make text inside visible */
+  html:not(.dark) .text-emerald-400.text-2xl,
+  html:not(.dark) .text-orange-400.text-2xl,
+  html:not(.dark) .text-red-400.text-2xl { color: #0f172a !important; }
+
+  /* Opacity text (like text with lower alpha) */
+  html:not(.dark) .opacity-90 { opacity: 1 !important; }
+  html:not(.dark) .opacity-80 { opacity: 1 !important; }
+
+  /* Fix description text in alert cards that uses slate-300/400/500 */
+  html:not(.dark) .text-slate-300 { color: #334155 !important; }
+  html:not(.dark) .text-slate-500 { color: #64748b !important; }
+
+  /* Fix bg-current used for risk score backdrop — too dark in light mode */
+  html:not(.dark) .bg-current {
+    opacity: 0.03 !important;
+  }
+
+  /* Gradient text — ensure it's dark enough in light mode */
+  html:not(.dark) .text-transparent.bg-clip-text {
+    -webkit-text-fill-color: transparent !important;
+  }
+
+  /* Fix the status badges remaining readable */
+  html:not(.dark) .bg-emerald-500\/10 { background-color: rgba(5, 150, 105, 0.08) !important; }
+  html:not(.dark) .bg-red-500\/10 { background-color: rgba(220, 38, 38, 0.08) !important; }
+  html:not(.dark) .bg-indigo-500\/10 { background-color: rgba(79, 70, 229, 0.08) !important; }
+
+  /* Weather widget icon colors */
+  html:not(.dark) .text-yellow-400 { color: #ca8a04 !important; }
+}
+
+@keyframes pulse-light {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+/* Custom scrollbar (works in both modes) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
 }
