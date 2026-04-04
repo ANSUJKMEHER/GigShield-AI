@@ -42,7 +42,7 @@ router.post('/login', async (req, res) => {
     }
     
     // Fallback securely for older plain-text users from early demo tests
-    const isMatch = user.password.startsWith('$2a$') 
+    const isMatch = user.password.startsWith('$2') 
       ? await bcrypt.compare(password, user.password) 
       : user.password === password;
 
