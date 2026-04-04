@@ -49,8 +49,8 @@ router.post('/subscribe', async (req, res) => {
     user.maxClaimsPerWeek = plans[plan].maxClaims;
     user.claimsThisWeek = 0;
     
-    // Core Rules Inject: 24-hour activation delay
-    user.policyActiveAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // Core Rules Inject: For Hackathon demo, set instantly active (1 min in the past)
+    user.policyActiveAt = new Date(Date.now() - 60 * 1000);
     
     await user.save();
     res.json({ message: 'Subscribed successfully', user });
