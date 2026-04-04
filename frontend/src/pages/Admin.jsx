@@ -111,9 +111,9 @@ export default function Admin() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <WebhookButton icon={CloudRain} label="Heavy Rain" desc={`Trigger for ${customCity || 'Mumbai'}`} onClick={() => triggerWebhook(customCity || 'Mumbai', 'General', 'Heavy Rain', '99mm Rainfall Alert')} loading={loading} color="bg-blue-500/20 text-blue-400 border-blue-500/30" hoverColor="hover:bg-blue-500 hover:text-white" />
-          <WebhookButton icon={Wind} label="High AQI" desc={`Trigger for ${customCity || 'Delhi'}`} onClick={() => triggerWebhook(customCity || 'Delhi', 'General', 'High AQI', 'AQI > 450 - Hazardous')} loading={loading} color="bg-orange-500/20 text-orange-400 border-orange-500/30" hoverColor="hover:bg-orange-500 hover:text-white" />
-          <WebhookButton icon={AlertOctagon} label="Curfew Imposed" desc={`Trigger for ${customCity || 'Bangalore'}`} onClick={() => triggerWebhook(customCity || 'Bangalore', 'General', 'Curfew', 'Section 144 Imposed')} loading={loading} color="bg-red-500/20 text-red-400 border-red-500/30" hoverColor="hover:bg-red-500 hover:text-white" />
+          <WebhookButton icon={CloudRain} label="Heavy Rain" desc={`Trigger for ${customCity || 'Mumbai'}`} onClick={() => triggerWebhook(customCity || 'Mumbai', '', 'Heavy Rain', '99mm Rainfall Alert')} loading={loading} color="bg-blue-500/20 text-blue-400 border-blue-500/30" hoverColor="hover:bg-blue-500 hover:text-white" />
+          <WebhookButton icon={Wind} label="High AQI" desc={`Trigger for ${customCity || 'Delhi'}`} onClick={() => triggerWebhook(customCity || 'Delhi', '', 'High AQI', 'AQI > 450 - Hazardous')} loading={loading} color="bg-orange-500/20 text-orange-400 border-orange-500/30" hoverColor="hover:bg-orange-500 hover:text-white" />
+          <WebhookButton icon={AlertOctagon} label="Curfew Imposed" desc={`Trigger for ${customCity || 'Bangalore'}`} onClick={() => triggerWebhook(customCity || 'Bangalore', '', 'Curfew', 'Section 144 Imposed')} loading={loading} color="bg-red-500/20 text-red-400 border-red-500/30" hoverColor="hover:bg-red-500 hover:text-white" />
         </div>
       </div>
 
