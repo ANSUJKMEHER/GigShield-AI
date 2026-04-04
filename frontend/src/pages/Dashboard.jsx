@@ -39,15 +39,31 @@ export default function Dashboard() {
   const [animatedRisk, setAnimatedRisk] = useState(0);
   const riskRef = useRef({ value: 0 });
 
-  const fetchUser = async () => {
+  const fetchUser = async (isPolling = false) => {
     try {
       const storedUser = JSON.parse(localStorage.getItem('user'));
       if (!storedUser) return;
       
       const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
       const { data } = await axios.get(`${API_URL}/api/auth/user/${storedUser._id}`);
+      
       setUserData(data.user);
-      setClaims(data.claims);
+      
+      if (isPolling) {
+        setClaims(prev => {
+           if (data.claims.length > prev.length) {
+              const newClaim = data.claims[0];
+              if (newClaim.status === 'Approved') {
+                  setSimulationResult({ success: true, message: 'Zero-Touch Check Passed', claim: newClaim });
+                  setShowClaimPopup(true);
+                  setTimeout(() => setShowClaimPopup(false), 8000);
+              }
+           }
+           return data.claims;
+        });
+      } else {
+        setClaims(data.claims);
+      }
       
       // Fetch dynamic base premium
       try {
@@ -63,6 +79,7 @@ export default function Dashboard() {
 
   useEffect(() => { 
     fetchUser(); 
+    const pollInterval = setInterval(() => fetchUser(true), 4000); // Poll every 4 seconds for magical zero-touch
     
     // Check if we already have the geo city to avoid waiting for GPS if it's cached/slow... but watchPosition takes care of it
     const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
@@ -144,6 +161,7 @@ export default function Dashboard() {
     return () => {
       window.removeEventListener('devicemotion', handleMotion);
       if (watchId) navigator.geolocation.clearWatch(watchId);
+      clearInterval(pollInterval);
     };
   }, []);
 
