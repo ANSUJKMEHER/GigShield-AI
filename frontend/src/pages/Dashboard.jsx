@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import anime from 'animejs/lib/anime.es.js';
 import MapTracker from '../components/MapTracker';
 import WeatherWidget from '../components/WeatherWidget';
+import RazorpaySimulator from '../components/RazorpaySimulator';
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -32,6 +33,7 @@ export default function Dashboard() {
 
   const [isSelectingPlan, setIsSelectingPlan] = useState(false);
   const [showClaimPopup, setShowClaimPopup] = useState(false);
+  const [showRazorpay, setShowRazorpay] = useState(false);
   const [dynamicBasePremium, setDynamicBasePremium] = useState(10);
   
   const [currentCity, setCurrentCity] = useState('');
@@ -56,6 +58,7 @@ export default function Dashboard() {
               if (newClaim.status === 'Approved') {
                   setSimulationResult({ success: true, message: 'Zero-Touch Check Passed', claim: newClaim });
                   setShowClaimPopup(true);
+                  setShowRazorpay(true);
                   setTimeout(() => setShowClaimPopup(false), 8000);
               }
            }
@@ -201,6 +204,7 @@ export default function Dashboard() {
         setLoading(false);
         fetchUser();
         setShowClaimPopup(true);
+        setShowRazorpay(true);
         setTimeout(() => setShowClaimPopup(false), 5000);
       }, 1500);
     } catch (error) {
@@ -761,6 +765,15 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        </div>
+      )}
+
+      {/* 7. Razorpay UPI Mock Simulator Overlay */}
+      {showRazorpay && simulationResult?.success && (
+        <RazorpaySimulator 
+            claim={simulationResult.claim} 
+            onClose={() => setShowRazorpay(false)} 
+        />
       )}
     </motion.div>
   );

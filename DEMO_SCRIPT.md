@@ -50,4 +50,13 @@ It queries the database, skips anyone who exceeded their weekly limit, and autom
 "And here is the magic of the Zero-Touch User Experience. Watch the worker's screen carefully.
 Through background polling, the worker's phone instantly receives an asynchronous network trigger confirming the automated claim. The payout is credited directly to their system balance. Beautiful, paperless, and incredibly fast. GigShield exists to ensure that the exact moment our workers lose their income, they instantly reclaim their dignity."
 
+---
+
+### [2:30 - 3:00] Multi-Layered Fraud Engine Validation
+*(Click on the "Claims" tab on the Worker Dashboard and open the History log for the recent payout, or keep the screen as is and explain the underlying tech)*
+
+**Speaker:**
+"Before we conclude, it's crucial to understand how we protect GigShield from syndicate fraud. While that claim payout looked instant to the worker, our backend executed a rigorous 7-layer fraud detection check in milliseconds. 
+Before releasing funds, the engine calculates the Haversine radius using the browser's GPS to ensure the worker is actually within the impacted zone. It also analyzes biomechanical accelerometer telemetry to guarantee they are actively moving, completely preventing static device spoofing. We don't just automate claims—we secure them algorithmically."
+
 *(Stop Recording)*

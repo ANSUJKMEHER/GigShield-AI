@@ -11,6 +11,7 @@ const pageVariants = {
 
 export default function Admin() {
   const [data, setData] = useState(null);
+  const [predictiveData, setPredictiveData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [customCity, setCustomCity] = useState('');
 
@@ -18,8 +19,12 @@ export default function Admin() {
     setLoading(true);
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
-      const { data } = await axios.get(`${API_URL}/api/admin/stats`);
-      setData(data);
+      const [statsRes, predRes] = await Promise.all([
+        axios.get(`${API_URL}/api/admin/stats`),
+        axios.get(`${API_URL}/api/admin/predictive-analytics`)
+      ]);
+      setData(statsRes.data);
+      setPredictiveData(predRes.data.forecast);
     } catch (error) {
       console.error(error);
     } finally {
@@ -87,12 +92,13 @@ export default function Admin() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
         <StatCard title="Total Users" value={data.totalUsers} icon={Users} color="text-indigo-400" />
         <StatCard title="Active Policies" value={data.activePolicies} icon={ShieldCheck} color="text-emerald-400" />
         <StatCard title="Total Claims" value={data.claimsCount} icon={FileText} color="text-blue-400" />
+        <StatCard title="Total Payouts" value={`₹${data.totalPayout}`} icon={IndianRupee} color="text-emerald-500" />
         <StatCard title="Fraud Blocked" value={data.fraudAttempts} icon={AlertOctagon} color="text-red-400" />
-        <StatCard title="Total Payouts" className="col-span-2 lg:col-span-1" value={`₹${data.totalPayout}`} icon={IndianRupee} color="text-emerald-500" />
+        <StatCard title="Loss Ratio" value={`${data.lossRatio}%`} icon={TrendingUp} color={data.lossRatio > 60 ? "text-red-500" : "text-emerald-400"} />
       </div>
 
       {/* Zero-Touch Claim Triggers */}
@@ -117,25 +123,54 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Payout Metric Graph */}
-      <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl p-4 sm:p-6 overflow-x-auto">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-6 sm:mb-8"><TrendingUp className="w-5 h-5 text-indigo-400"/> System Payout Volume (7-Day Trend)</h2>
-        
-        <div className="flex items-end justify-between h-40 sm:h-48 gap-2 min-w-[500px]">
-          {[40, 70, 45, 90, 30, 100, 60].map((val, i) => (
-            <div key={i} className="w-full flex flex-col justify-end items-center group h-full">
-              <div className="text-xs font-bold text-emerald-400 mb-2 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0">
-                ₹{val * 15}
+      {/* Payout & Predictive ML Metric Graphs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl p-4 sm:p-6 overflow-x-auto">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-6 sm:mb-8"><TrendingUp className="w-5 h-5 text-indigo-400"/> System Payout Volume (7-Day Trend)</h2>
+          
+          <div className="flex items-end justify-between h-40 sm:h-48 gap-2 min-w-[300px]">
+            {[40, 70, 45, 90, 30, 100, 60].map((val, i) => (
+              <div key={i} className="w-full flex flex-col justify-end items-center group h-full">
+                <div className="text-xs font-bold text-emerald-400 mb-2 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0">
+                  ₹{val * 15}
+                </div>
+                <div 
+                  className={`w-full max-w-[40px] rounded-t-lg transition-all duration-500 ${i === 6 ? 'bg-indigo-500' : 'bg-slate-700 group-hover:bg-slate-600'}`}
+                  style={{ height: `${val}%` }}
+                ></div>
+                <div className={`text-[10px] sm:text-xs mt-2 sm:mt-3 font-medium ${i === 6 ? 'text-indigo-400' : 'text-slate-500'}`}>
+                  {i === 6 ? 'Today' : `Day -${6-i}`}
+                </div>
               </div>
-              <div 
-                className={`w-full max-w-[40px] sm:max-w-[60px] rounded-t-lg transition-all duration-500 ${i === 6 ? 'bg-indigo-500' : 'bg-slate-700 group-hover:bg-slate-600'}`}
-                style={{ height: `${val}%` }}
-              ></div>
-              <div className={`text-[10px] sm:text-xs mt-2 sm:mt-3 font-medium ${i === 6 ? 'text-indigo-400' : 'text-slate-500'}`}>
-                {i === 6 ? 'Today' : `Day -${6-i}`}
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-slate-900 rounded-2xl border border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.05)] p-4 sm:p-6 overflow-x-auto relative">
+          <div className="absolute top-0 right-0 p-4"><span className="text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 px-2 py-1 rounded-full uppercase tracking-wider">brain.js prediction</span></div>
+          <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-6 sm:mb-8"><Activity className="w-5 h-5 text-purple-400"/> AI Forecast (Next 7 Days)</h2>
+          
+          <div className="flex items-end justify-between h-40 sm:h-48 gap-2 min-w-[300px]">
+            {predictiveData?.map((item, i) => (
+              <div key={i} className="w-full flex flex-col justify-end items-center group h-full relative">
+                {item.alert && (
+                  <div className="absolute -top-8 bg-red-500/20 border border-red-500 text-red-400 text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap animate-bounce">
+                    {item.alert}
+                  </div>
+                )}
+                <div className="text-xs font-bold text-purple-400 mb-2 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0">
+                  {item.predictedClaims} claims
+                </div>
+                <div 
+                  className={`w-full max-w-[40px] rounded-t-lg transition-all duration-500 ${item.riskFactor > 0.7 ? 'bg-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-purple-500/50 group-hover:bg-purple-500/70'}`}
+                  style={{ height: `${Math.max(10, item.riskFactor * 100)}%` }}
+                ></div>
+                <div className="text-[10px] sm:text-xs mt-2 sm:mt-3 font-medium text-slate-400">
+                  {item.day}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 

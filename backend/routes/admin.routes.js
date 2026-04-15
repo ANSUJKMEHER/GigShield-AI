@@ -14,6 +14,11 @@ router.get('/stats', async (req, res) => {
     let totalPayout = 0;
     claims.forEach(c => totalPayout += c.payoutAmount);
     
+    let totalPremiums = 0;
+    users.forEach(u => totalPremiums += (u.premium || 0));
+    
+    const lossRatio = totalPremiums > 0 ? ((totalPayout / totalPremiums) * 100).toFixed(2) : 0;
+    
     const fraudAttempts = claims.filter(c => c.status === 'Rejected').length;
     const activePolicies = users.filter(u => u.activePlan !== 'None').length;
     
@@ -22,12 +27,34 @@ router.get('/stats', async (req, res) => {
       claimsCount,
       fraudAttempts,
       totalPayout,
+      totalPremiums,
+      lossRatio,
       activePolicies,
       users,
       claims
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/predictive-analytics', async (req, res) => {
+  try {
+    // Phase 3: Simulated Predictive Analytics based on ML Engine & Upcoming Weather Fronts
+    // In production, this would query a forward-looking API (e.g. 7-day forecast) and push through brain.js
+    const mockPrediction = [
+      { day: 'Mon', riskFactor: 0.2, predictedClaims: 12 },
+      { day: 'Tue', riskFactor: 0.3, predictedClaims: 18 },
+      { day: 'Wed', riskFactor: 0.8, predictedClaims: 85, alert: 'High Rain Forecast' }, // Anomaly prediction
+      { day: 'Thu', riskFactor: 0.6, predictedClaims: 45 },
+      { day: 'Fri', riskFactor: 0.2, predictedClaims: 15 },
+      { day: 'Sat', riskFactor: 0.1, predictedClaims: 5 },
+      { day: 'Sun', riskFactor: 0.1, predictedClaims: 3 }
+    ];
+    
+    res.json({ forecast: mockPrediction });
+  } catch(error) {
+    res.status(500).json({ message: 'Error generating predictive analytics' });
   }
 });
 
