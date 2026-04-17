@@ -14,12 +14,12 @@
 
 _(Scene: Start on the Create Account Screen)_
 
-**Action [0:00]:** Start typing slowly. Register a new user named "Ravi". Set City to "Mumbai", Platform to "Zomato", and Threat Zone to "High AQI Hotspot". Hit 'Create Account'.
+**Action [0:00]:** Start typing slowly. Register a new user named "Ravi". Set City to "Mangalagiri", Platform to "Zomato", and Threat Zone to "Low Risk Zone". Hit 'Create Account'.
 
 **Speaker:**
 "Good morning Judges. Welcome to GigShield. We are building India's first fully autonomous, AI-driven parametric safety net designed specifically for the gig economy workforce.
 
-Our core persona is Ravi. Ravi is a dedicated Zomato delivery partner operating in the heavily congested zones of Mumbai. Like millions of gig workers across India, he operates week-to-week, surviving on daily wages. If an unprecedented monsoon floods his delivery zone, or severe pollution forces his app to suspend operations, Ravi bears 100% of the financial loss.
+Our core persona is Ravi. Ravi is a dedicated Zomato delivery partner operating in Mangalagiri. Like millions of gig workers across India, he operates week-to-week, surviving on daily wages. If an unprecedented monsoon floods his delivery zone, or severe pollution forces his app to suspend operations, Ravi bears 100% of the financial loss.
 
 Traditional insurance is fundamentally broken for Ravi. He cannot afford heavy monthly premiums, he struggles with complex deductibles, and he absolutely cannot afford a 30-day delay while a human adjuster reviews a paper claim.
 
@@ -28,7 +28,7 @@ GigShield completely reinvents this model."
 **Action [0:45]:** Read the prompt on screen. Navigate to the **"Plans"** tab. Hover your mouse over the Premium Elite plan.
 
 **Speaker:**
-"Beneath this scalable React frontend, our Node.js architecture integrates a `brain.js` Feed-Forward Neural Network. When Ravi registers with his High AQI threat zone, our Machine Learning engine runs forward-propagation. It cross-references our historical loss ratios with Live Weather telemetry via the Open-Meteo satellite API to dynamically compute a hyper-localized, weekly premium. This guarantees the mathematical profitability of our ecosystem while offering Ravi an incredibly affordable, weekly safety net."
+"Beneath this scalable React frontend, our Node.js architecture integrates a `brain.js` Feed-Forward Neural Network. When Ravi registers with a Low Risk Zone, our Machine Learning engine runs forward-propagation. It cross-references our historical loss ratios with Live Weather telemetry via the Open-Meteo satellite API to dynamically compute a hyper-localized, weekly premium. This guarantees the mathematical profitability of our ecosystem while offering Ravi an incredibly affordable, weekly safety net."
 
 **Action [1:10]:** Click "Subscribe" on the Elite premium plan. Watch the UI update to show Active Coverage.
 
@@ -105,7 +105,7 @@ _(Scene: Scroll down the Admin Page to the Parametric Webhooks section)_
 **Speaker:**
 "Finally, let’s look at business viability. Because we operate as a parametric engine, our true power is mass execution capabilities. If the local government declares an unplanned curfew, we don't have time to handle 50,000 claims individually."
 
-**Action [4:30]:** Type "Mumbai" into the custom city input text box. Click the Red **"Curfew"** webhook button.
+**Action [4:30]:** Type "Mangalagiri" into the custom city input text box. Click the Red **"Curfew"** webhook button.
 
 **Speaker:**
 "We simply fire a backend webhook."
