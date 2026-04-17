@@ -74,4 +74,34 @@ router.post('/reset-weekly', async (req, res) => {
   }
 });
 
+router.put('/claims/:id/resolve', async (req, res) => {
+  try {
+    const { status, reason } = req.body;
+    const claim = await Claim.findById(req.params.id);
+    if (!claim) return res.status(404).json({ message: 'Claim not found' });
+    
+    claim.status = status;
+    claim.rejectionReason = reason || claim.rejectionReason;
+    
+    // If approved, update user payouts
+    if (status === 'Approved') {
+       const user = await User.findById(claim.userId);
+       const payoutAmount = Math.min(claim.loss, user.coverageRemaining || 800);
+       claim.payoutAmount = payoutAmount;
+       
+       if (user) {
+         user.totalPayouts += payoutAmount;
+         user.coverageRemaining -= payoutAmount;
+         user.claimsThisWeek += 1;
+         await user.save();
+       }
+    }
+    
+    await claim.save();
+    res.json({ message: `Claim successfully ${status.toLowerCase()}.`, claim });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error resolving claim' });
+  }
+});
+
 module.exports = router;

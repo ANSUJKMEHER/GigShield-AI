@@ -74,6 +74,7 @@ exports.detectFraud = async (userId, triggerEvent, city, liveGps, liveWeather, t
     };
 
     let isFraud = false;
+    let requiresReview = false;
     let reason = '';
 
     if (!isWorkerActive) {
@@ -87,7 +88,7 @@ exports.detectFraud = async (userId, triggerEvent, city, liveGps, liveWeather, t
     } else if (!isGpsSpoofingFree) {
       isFraud = true; reason = 'GPS NODE SPOOFING DETECTED: Velocity between node pings exceeds physical delivery vehicle limitations.';
     } else if (isAnomalyDetected) {
-      isFraud = true; reason = 'Behavioral Anomaly: Continuous high-variance movement logged with zero revenue generation implies simulated routing.';
+      requiresReview = true; reason = 'Behavioral Anomaly: High-variance movement logged with zero revenue generation. Soft-flagged for Admin Review.';
     }
 
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -95,7 +96,7 @@ exports.detectFraud = async (userId, triggerEvent, city, liveGps, liveWeather, t
 
     if (recentClaim) {
       checks.duplicateFree = false;
-      if (!isFraud) { isFraud = true; reason = 'Duplicate claim block. You can only file 1 claim per 24 hours.'; }
+      if (!isFraud && !requiresReview) { requiresReview = true; reason = '24-hour Cooldown triggered. Claim flagged for manual duplication review.'; }
     }
 
     if (triggerEvent === 'Heavy Rain') {
@@ -106,9 +107,9 @@ exports.detectFraud = async (userId, triggerEvent, city, liveGps, liveWeather, t
       }
     }
 
-    return { isFraud, reason, checks };
+    return { isFraud, requiresReview, reason, checks };
   } catch (error) {
     console.error('Error in fraud detection:', error);
-    return { isFraud: true, reason: 'System error during validation', checks: {} };
+    return { isFraud: true, requiresReview: false, reason: 'System error during validation', checks: {} };
   }
 };

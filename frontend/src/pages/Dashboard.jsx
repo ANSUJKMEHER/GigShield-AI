@@ -740,6 +740,8 @@ export default function Dashboard() {
                       <span className="font-black text-indigo-300 block mb-2 uppercase tracking-widest text-[9px]">Decision Matrix Log:</span>
                       {claim.status === 'Approved' 
                         ? <span className="leading-relaxed"><span className="text-white font-medium">{claim.eventDetails?.severity}</span> logged by data oracles. Gig drops hit threshold of {claim.eventDetails?.deliveryDrop || '45%'}. Multi-layered AI Telemetry validation passed completely.</span>
+                        : claim.status === 'Under Review'
+                        ? <span className="text-orange-400 font-bold leading-relaxed">{claim.rejectionReason}</span>
                         : <span className="text-red-400 font-bold leading-relaxed">{claim.rejectionReason}</span>}
                     </div>
 
@@ -747,15 +749,15 @@ export default function Dashboard() {
                       <div className="text-slate-500 text-[10px] sm:text-xs font-mono font-medium">
                         {new Date(claim.createdAt).toLocaleString(undefined, {dateStyle: 'medium', timeStyle: 'short'})}
                         <div className="mt-2 text-xs flex gap-2 items-center">
-                           <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${claim.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>
-                              {claim.status === 'Approved' ? 'Paid' : 'Blocked'}
+                           <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${claim.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : claim.status === 'Under Review' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>
+                              {claim.status === 'Approved' ? 'Paid' : claim.status === 'Under Review' ? 'Pending' : 'Blocked'}
                            </span>
                         </div>
                       </div>
                       <div className="text-right">
                          <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Total Payout</div>
-                         <span className={`text-3xl font-black tracking-tight ${claim.status === 'Approved' ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 drop-shadow-sm' : 'text-slate-600 line-through'}`}>
-                           ₹{claim.payoutAmount}
+                         <span className={`text-3xl font-black tracking-tight ${claim.status === 'Approved' ? 'text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 drop-shadow-sm' : claim.status === 'Under Review' ? 'text-orange-400' : 'text-slate-600 line-through'}`}>
+                           ₹{claim.status === 'Approved' ? claim.payoutAmount : claim.loss}
                          </span>
                       </div>
                     </div>

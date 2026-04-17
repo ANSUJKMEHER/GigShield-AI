@@ -10,7 +10,7 @@ const ClaimSchema = new mongoose.Schema({
   loss: { type: Number, required: true },
   
   payoutAmount: { type: Number, required: true },
-  status: { type: String, enum: ['Approved', 'Rejected'], default: 'Approved' },
+  status: { type: String, enum: ['Approved', 'Rejected', 'Under Review'], default: 'Approved' },
   
   fraudChecks: { type: Object, default: {} },
   eventDetails: { type: Object, default: {} },

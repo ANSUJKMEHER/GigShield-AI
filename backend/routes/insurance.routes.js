@@ -115,6 +115,21 @@ router.post('/simulate-event', async (req, res) => {
       return res.status(400).json({ message: fraudCheck.reason, claim: rejectedClaim });
     }
 
+    if (fraudCheck.requiresReview) {
+      const reviewClaim = new Claim({ 
+        userId, triggerEvent, city, expectedIncome, actualIncome, loss, payoutAmount: 0, status: 'Under Review',
+        fraudChecks: fraudCheck.checks,
+        eventDetails,
+        rejectionReason: fraudCheck.reason
+      });
+      await reviewClaim.save();
+      return res.status(200).json({ 
+         message: 'Claim soft-flagged for Admin Manual Review. Payout paused.', 
+         claim: reviewClaim,
+         requiresReview: true
+      });
+    }
+
     const payoutAmount = Math.min(loss, user.coverageRemaining);
 
     const claim = new Claim({

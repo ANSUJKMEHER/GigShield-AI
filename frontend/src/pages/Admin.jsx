@@ -62,6 +62,19 @@ export default function Admin() {
     }
   };
 
+  const handleResolveClaim = async (claimId, status) => {
+    if (!confirm(`Are you sure you want to mark this claim as ${status}?`)) return;
+    setLoading(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://gigshield-backend-c1z7.onrender.com';
+      await axios.put(`${API_URL}/api/admin/claims/${claimId}/resolve`, { status });
+      fetchStats();
+    } catch (err) {
+      alert('Failed to resolve claim');
+      setLoading(false);
+    }
+  };
+
   useEffect(() => { fetchStats(); }, []);
 
   if (!data) return null;
@@ -173,6 +186,52 @@ export default function Admin() {
           </div>
         </div>
       </div>
+
+      {(() => {
+        const reviewClaims = data.claims.filter(c => c.status === 'Under Review');
+        if (reviewClaims.length === 0) return null;
+        return (
+          <div className="bg-slate-900 rounded-2xl border border-orange-500/30 shadow-xl overflow-hidden mt-6 mb-6">
+            <div className="p-4 sm:p-5 border-b border-orange-500/30 bg-orange-500/10 flex-shrink-0">
+              <h2 className="text-lg font-bold text-orange-400 flex items-center gap-2">
+                <AlertOctagon className="w-5 h-5"/> Claims Awaiting Manual Review ({reviewClaims.length})
+              </h2>
+            </div>
+            <div className="overflow-x-auto p-4 custom-scrollbar">
+               <table className="w-full text-left text-sm text-slate-300">
+                  <thead className="text-[10px] sm:text-xs uppercase text-slate-500 border-b border-slate-700">
+                    <tr>
+                      <th className="px-4 py-2 font-medium">Worker / Event</th>
+                      <th className="px-4 py-2 font-medium">Flag Reason</th>
+                      <th className="px-4 py-2 font-medium">Calculated Loss</th>
+                      <th className="px-4 py-2 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50">
+                    {reviewClaims.map(c => (
+                      <tr key={c._id} className="hover:bg-slate-800/30 transition-colors">
+                        <td className="px-4 py-3">
+                           <div className="font-bold text-white">{c.userId?.name || 'Unknown'}</div>
+                           <div className="text-xs text-slate-400">{c.triggerEvent} • {c.city}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                           <div className="text-xs text-orange-300 max-w-sm whitespace-normal leading-relaxed">{c.rejectionReason}</div>
+                        </td>
+                        <td className="px-4 py-3 font-mono font-bold text-red-400">₹{c.loss}</td>
+                        <td className="px-4 py-3 text-right">
+                           <div className="flex justify-end gap-2">
+                             <button onClick={() => handleResolveClaim(c._id, 'Approved')} className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg text-xs font-bold transition-colors">Approve</button>
+                             <button onClick={() => handleResolveClaim(c._id, 'Rejected')} className="px-3 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-lg text-xs font-bold transition-colors">Reject</button>
+                           </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+               </table>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Users Table */}
