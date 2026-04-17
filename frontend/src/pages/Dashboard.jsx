@@ -204,7 +204,9 @@ export default function Dashboard() {
         setLoading(false);
         fetchUser();
         setShowClaimPopup(true);
-        setShowRazorpay(true);
+        if (data.claim?.status === 'Approved') {
+           setShowRazorpay(true);
+        }
         setTimeout(() => setShowClaimPopup(false), 5000);
       }, 1500);
     } catch (error) {
