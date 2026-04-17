@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, FileText, AlertOctagon, IndianRupee, RefreshCw, Activity, ShieldCheck, TrendingUp, Zap, CloudRain, Wind } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Users, FileText, AlertOctagon, IndianRupee, RefreshCw, Activity, ShieldCheck, TrendingUp, Zap, CloudRain, Wind, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -14,6 +14,7 @@ export default function Admin() {
   const [predictiveData, setPredictiveData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [customCity, setCustomCity] = useState('');
+  const [webhookResult, setWebhookResult] = useState(null);
 
   const fetchStats = async () => {
     setLoading(true);
@@ -40,7 +41,8 @@ export default function Admin() {
       const res = await axios.post(`${API_URL}/api/insurance/webhook/trigger-disruption`, {
         city, zone, triggerEvent, eventSeverity
       });
-      alert(`Success! ${res.data.stats.claimsCreated} zero-touch claims auto-processed for affected workers in ${city}. Total Payout: ₹${res.data.stats.totalPayout}`);
+      setWebhookResult({ city, claimsCreated: res.data.stats.claimsCreated, totalPayout: res.data.stats.totalPayout, triggerEvent });
+      setTimeout(() => setWebhookResult(null), 6000);
       fetchStats();
     } catch (err) {
       alert('Failed to trigger webhook');
@@ -307,6 +309,45 @@ export default function Admin() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {webhookResult && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-8 sm:bottom-12 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-lg bg-slate-900 border border-emerald-500/30 shadow-[0_20px_50px_rgba(16,185,129,0.3)] rounded-3xl p-6 overflow-hidden backdrop-blur-xl"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-[30px] rounded-full pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 blur-[30px] rounded-full pointer-events-none"></div>
+
+            <div className="flex flex-col items-center text-center relative z-10">
+               <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-400 drop-shadow-md" />
+               </div>
+               <h3 className="text-xl font-black text-white tracking-tight mb-1">Parametric Net Triggered</h3>
+               <p className="text-sm text-slate-400 mb-6 font-medium">
+                 Zero-touch API automated the <span className="text-white">[{webhookResult.triggerEvent}]</span> logic for <strong className="text-indigo-400 font-bold max-w-xs truncate inline-block align-bottom">{webhookResult.city}</strong>.
+               </p>
+
+               <div className="grid grid-cols-2 gap-4 w-full">
+                  <div className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700 w-full text-center hover:bg-slate-800 transition-colors">
+                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Claims Settled</div>
+                     <span className="text-3xl font-black text-white">{webhookResult.claimsCreated}</span>
+                  </div>
+                  <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20 w-full text-center hover:bg-emerald-500/20 transition-colors">
+                     <div className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-widest mb-1">Payout Volume</div>
+                     <span className="text-3xl font-black text-emerald-400">₹{webhookResult.totalPayout}</span>
+                  </div>
+               </div>
+               
+               <div className="mt-5 text-[9px] text-slate-500 font-mono tracking-wider flex items-center gap-1.5 opacity-60">
+                 <Activity className="w-3 h-3" /> NEURAL NETWORK SYNC COMPLETED
+               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </motion.div>
   );
