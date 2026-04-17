@@ -1,7 +1,8 @@
 # 🎬 GigShield 5-Minute Demo Script (Phase 3 Masterclass)
 
-**Target Video Length:** 5 Minutes (Approx. 850 spoken words) 
-**Prerequisites:** 
+**Target Video Length:** 5 Minutes (Approx. 850 spoken words)
+**Prerequisites:**
+
 - Open the **Worker Dashboard** (`/`) in your left browser tab.
 - Open the **Admin Portal** (`/admin`) in your right browser tab.
 - Clear your local storage so you start fresh on the GigShield Landing Page/Register screen.
@@ -10,16 +11,17 @@
 ---
 
 ### [0:00 - 1:15] The Gig Economy Problem & Neural Pricing Engine
-*(Scene: Start on the Create Account Screen)*
+
+_(Scene: Start on the Create Account Screen)_
 
 **Action [0:00]:** Start typing slowly. Register a new user named "Ravi". Set City to "Mumbai", Platform to "Zomato", and Threat Zone to "High AQI Hotspot". Hit 'Create Account'.
 
 **Speaker:**
-"Good morning Judges. Welcome to GigShield. We are building India's first fully autonomous, AI-driven parametric safety net designed specifically for the gig economy workforce. 
+"Good morning Judges. Welcome to GigShield. We are building India's first fully autonomous, AI-driven parametric safety net designed specifically for the gig economy workforce.
 
 Our core persona is Ravi. Ravi is a dedicated Zomato delivery partner operating in the heavily congested zones of Mumbai. Like millions of gig workers across India, he operates week-to-week, surviving on daily wages. If an unprecedented monsoon floods his delivery zone, or severe pollution forces his app to suspend operations, Ravi bears 100% of the financial loss.
 
-Traditional insurance is fundamentally broken for Ravi. He cannot afford heavy monthly premiums, he struggles with complex deductibles, and he absolutely cannot afford a 30-day delay while a human adjuster reviews a paper claim. 
+Traditional insurance is fundamentally broken for Ravi. He cannot afford heavy monthly premiums, he struggles with complex deductibles, and he absolutely cannot afford a 30-day delay while a human adjuster reviews a paper claim.
 
 GigShield completely reinvents this model."
 
@@ -33,7 +35,8 @@ GigShield completely reinvents this model."
 ---
 
 ### [1:15 - 2:30] Instant Payout Simulation (The Razorpay Magic)
-*(Scene: Stay on the Worker Dashboard Tab. Scroll down to the Disruption Buttons)*
+
+_(Scene: Stay on the Worker Dashboard Tab. Scroll down to the Disruption Buttons)_
 
 **Speaker:**
 "Let me demonstrate our core platform innovation: Parametric, Zero-Touch Claims processing. Gig workers don't have the luxury of time to file PDFs or upload photographs of severe rain. In our system, the claim triggers itself.
@@ -43,7 +46,7 @@ Watch exactly what happens when a severe environmental disruption hits Ravi's op
 **Action [1:40]:** Wiggle your mouse vigorously for a couple of seconds to generate active telemetry. Then, click the Red **"High AQI"** disruption button. Do not touch the mouse after clicking!
 
 **Speaker:**
-"The moment the data oracle intercepts the weather API event, our backend executes a grueling multi-vector validation system. First, it verifies Ravi's identity using live browser GPS bounds limits. Second, it calculates Biomechanical Accelerometer Telemetry in real-time. Notice how the AI checks for device variance? This proves he is physically delivering, completely neutralizing syndicate device-farm spoofing. 
+"The moment the data oracle intercepts the weather API event, our backend executes a grueling multi-vector validation system. First, it verifies Ravi's identity using live browser GPS bounds limits. Second, it calculates Biomechanical Accelerometer Telemetry in real-time. Notice how the AI checks for device variance? This proves he is physically delivering, completely neutralizing syndicate device-farm spoofing.
 
 Once his physical presence is validated against the disruption, the system bypasses human adjusters entirely."
 
@@ -57,7 +60,8 @@ Once his physical presence is validated against the disruption, the system bypas
 ---
 
 ### [2:30 - 3:30] The Fraud Engine & Soft Review State (Phase 3 Innovation)
-*(Scene: Stay on the Worker Dashboard. Do not change tabs.)*
+
+_(Scene: Stay on the Worker Dashboard. Do not change tabs.)_
 
 **Speaker:**
 "But maintaining scale requires a robust, zero-tolerance defense architecture. What happens if a bad actor attempts to duplicate claims repeatedly to intentionally drain our capital reserves? Let me try to immediately trigger another claim, simulating an App server crash."
@@ -65,7 +69,7 @@ Once his physical presence is validated against the disruption, the system bypas
 **Action [2:50]:** Click the **"App Crash"** button immediately.
 
 **Speaker:**
-"Typically, legacy insurance tech would outright block the transaction and ban the worker's account. However, our Phase 3 Neural Logic includes a highly sophisticated 'Soft-Review' state. 
+"Typically, legacy insurance tech would outright block the transaction and ban the worker's account. However, our Phase 3 Neural Logic includes a highly sophisticated 'Soft-Review' state.
 
 Our fraud engine intercepted the fact that Ravi requested two separate payouts within a 24-hour mandatory cooldown period."
 
@@ -76,13 +80,14 @@ Our fraud engine intercepted the fact that Ravi requested two separate payouts w
 
 ---
 
-### [3:30 - 4:15] The Intelligent Admin Queue 
-*(Scene: Switch to the Admin Portal Tab)*
+### [3:30 - 4:15] The Intelligent Admin Queue
+
+_(Scene: Switch to the Admin Portal Tab)_
 
 **Action [3:30]:** Reload the Admin page to fetch fresh data. Point your cursor to the glowing Orange Review Queue at the very top of the interface.
 
 **Speaker:**
-"Switching over to our Admin command center, you can see our automated Manual Review Queue at the top of the interface. The intelligence layer has flagged Ravi's second claim, explicitly detailing to the underwriter that the *24-Hour Cooldown* mechanism was breached.
+"Switching over to our Admin command center, you can see our automated Manual Review Queue at the top of the interface. The intelligence layer has flagged Ravi's second claim, explicitly detailing to the underwriter that the _24-Hour Cooldown_ mechanism was breached.
 
 This gives human agents the ultimate power to override specific edge cases. We can see his exact calculated loss and instantly choose to Reject or Approve. I will choose to Reject it based on the AI's flag."
 
@@ -94,12 +99,13 @@ This gives human agents the ultimate power to override specific edge cases. We c
 ---
 
 ### [4:15 - 5:00] Zero-Touch Mass Payouts & Business Viability
-*(Scene: Scroll down the Admin Page to the Parametric Webhooks section)*
+
+_(Scene: Scroll down the Admin Page to the Parametric Webhooks section)_
 
 **Speaker:**
 "Finally, let’s look at business viability. Because we operate as a parametric engine, our true power is mass execution capabilities. If the local government declares an unplanned curfew, we don't have time to handle 50,000 claims individually."
 
-**Action [4:30]:** Type "Mumbai" into the custom city input text box. Click the Red **"Curfew"** webhook button. 
+**Action [4:30]:** Type "Mumbai" into the custom city input text box. Click the Red **"Curfew"** webhook button.
 
 **Speaker:**
 "We simply fire a backend webhook."
@@ -107,8 +113,8 @@ This gives human agents the ultimate power to override specific edge cases. We c
 **Action [4:40]:** Watch the gorgeous new Animated Overlay slide up from the bottom! Hover over the "Claims Settled" and "Payout Volume" numbers.
 
 **Speaker:**
-"Our servers instantly orchestrate thousands of concurrent calculations, querying the geospatial MongoDB database and automatically dropping thousands of rupees directly into the bank accounts of every affected worker simultaneously without a single one of them opening the app. 
+"Our servers instantly orchestrate thousands of concurrent calculations, querying the geospatial MongoDB database and automatically dropping thousands of rupees directly into the bank accounts of every affected worker simultaneously without a single one of them opening the app.
 
 By eliminating the human supply chain of traditional insurance, GigShield offers an AI-protected, mathematically profitable, and instantly liquidated safety net. Thank you for your time."
 
-*(Stop Recording)*
+_(Stop Recording)_

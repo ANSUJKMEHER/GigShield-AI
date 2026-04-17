@@ -1,10 +1,10 @@
-import { useRef, useState, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Points, PointMaterial } from '@react-three/drei';
+import { useRef, useState, useMemo } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { Points, PointMaterial } from "@react-three/drei";
 
 function ParticleSphere(props) {
   const ref = useRef();
-  
+
   // Generate 3000 random points inside a sphere
   const positions = useMemo(() => {
     const pts = new Float32Array(3000 * 3);
@@ -30,7 +30,13 @@ function ParticleSphere(props) {
 
   return (
     <group rotation={[0, 0, Math.PI / 4]}>
-      <Points ref={ref} positions={positions} stride={3} frustumCulled={false} {...props}>
+      <Points
+        ref={ref}
+        positions={positions}
+        stride={3}
+        frustumCulled={false}
+        {...props}
+      >
         <PointMaterial
           transparent
           color="#6366f1" // indigo-500

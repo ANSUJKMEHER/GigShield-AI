@@ -1,27 +1,28 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const User = require('../models/User');
-const Claim = require('../models/Claim');
+const User = require("../models/User");
+const Claim = require("../models/Claim");
 
-router.get('/stats', async (req, res) => {
+router.get("/stats", async (req, res) => {
   try {
     const users = await User.find().sort({ createdAt: -1 });
     const claims = await Claim.find().sort({ createdAt: -1 });
 
     const totalUsers = users.length;
     const claimsCount = claims.length;
-    
+
     let totalPayout = 0;
-    claims.forEach(c => totalPayout += c.payoutAmount);
-    
+    claims.forEach((c) => (totalPayout += c.payoutAmount));
+
     let totalPremiums = 0;
-    users.forEach(u => totalPremiums += (u.premium || 0));
-    
-    const lossRatio = totalPremiums > 0 ? ((totalPayout / totalPremiums) * 100).toFixed(2) : 0;
-    
-    const fraudAttempts = claims.filter(c => c.status === 'Rejected').length;
-    const activePolicies = users.filter(u => u.activePlan !== 'None').length;
-    
+    users.forEach((u) => (totalPremiums += u.premium || 0));
+
+    const lossRatio =
+      totalPremiums > 0 ? ((totalPayout / totalPremiums) * 100).toFixed(2) : 0;
+
+    const fraudAttempts = claims.filter((c) => c.status === "Rejected").length;
+    const activePolicies = users.filter((u) => u.activePlan !== "None").length;
+
     res.json({
       totalUsers,
       claimsCount,
@@ -31,36 +32,41 @@ router.get('/stats', async (req, res) => {
       lossRatio,
       activePolicies,
       users,
-      claims
+      claims,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-router.get('/predictive-analytics', async (req, res) => {
+router.get("/predictive-analytics", async (req, res) => {
   try {
     // Phase 3: Simulated Predictive Analytics based on ML Engine & Upcoming Weather Fronts
     // In production, this would query a forward-looking API (e.g. 7-day forecast) and push through brain.js
     const mockPrediction = [
-      { day: 'Mon', riskFactor: 0.2, predictedClaims: 12 },
-      { day: 'Tue', riskFactor: 0.3, predictedClaims: 18 },
-      { day: 'Wed', riskFactor: 0.8, predictedClaims: 85, alert: 'High Rain Forecast' }, // Anomaly prediction
-      { day: 'Thu', riskFactor: 0.6, predictedClaims: 45 },
-      { day: 'Fri', riskFactor: 0.2, predictedClaims: 15 },
-      { day: 'Sat', riskFactor: 0.1, predictedClaims: 5 },
-      { day: 'Sun', riskFactor: 0.1, predictedClaims: 3 }
+      { day: "Mon", riskFactor: 0.2, predictedClaims: 12 },
+      { day: "Tue", riskFactor: 0.3, predictedClaims: 18 },
+      {
+        day: "Wed",
+        riskFactor: 0.8,
+        predictedClaims: 85,
+        alert: "High Rain Forecast",
+      }, // Anomaly prediction
+      { day: "Thu", riskFactor: 0.6, predictedClaims: 45 },
+      { day: "Fri", riskFactor: 0.2, predictedClaims: 15 },
+      { day: "Sat", riskFactor: 0.1, predictedClaims: 5 },
+      { day: "Sun", riskFactor: 0.1, predictedClaims: 3 },
     ];
-    
+
     res.json({ forecast: mockPrediction });
-  } catch(error) {
-    res.status(500).json({ message: 'Error generating predictive analytics' });
+  } catch (error) {
+    res.status(500).json({ message: "Error generating predictive analytics" });
   }
 });
 
-router.post('/reset-weekly', async (req, res) => {
+router.post("/reset-weekly", async (req, res) => {
   try {
-    const users = await User.find({ activePlan: { $ne: 'None' } });
+    const users = await User.find({ activePlan: { $ne: "None" } });
     let resetCount = 0;
     for (const u of users) {
       u.claimsThisWeek = 0;
@@ -68,39 +74,41 @@ router.post('/reset-weekly', async (req, res) => {
       await u.save();
       resetCount++;
     }
-    res.json({ message: `Weekly limits reset for ${resetCount} active policies.` });
+    res.json({
+      message: `Weekly limits reset for ${resetCount} active policies.`,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error resetting weeks' });
+    res.status(500).json({ message: "Server error resetting weeks" });
   }
 });
 
-router.put('/claims/:id/resolve', async (req, res) => {
+router.put("/claims/:id/resolve", async (req, res) => {
   try {
     const { status, reason } = req.body;
     const claim = await Claim.findById(req.params.id);
-    if (!claim) return res.status(404).json({ message: 'Claim not found' });
-    
+    if (!claim) return res.status(404).json({ message: "Claim not found" });
+
     claim.status = status;
     claim.rejectionReason = reason || claim.rejectionReason;
-    
+
     // If approved, update user payouts
-    if (status === 'Approved') {
-       const user = await User.findById(claim.userId);
-       const payoutAmount = Math.min(claim.loss, user.coverageRemaining || 800);
-       claim.payoutAmount = payoutAmount;
-       
-       if (user) {
-         user.totalPayouts += payoutAmount;
-         user.coverageRemaining -= payoutAmount;
-         user.claimsThisWeek += 1;
-         await user.save();
-       }
+    if (status === "Approved") {
+      const user = await User.findById(claim.userId);
+      const payoutAmount = Math.min(claim.loss, user.coverageRemaining || 800);
+      claim.payoutAmount = payoutAmount;
+
+      if (user) {
+        user.totalPayouts += payoutAmount;
+        user.coverageRemaining -= payoutAmount;
+        user.claimsThisWeek += 1;
+        await user.save();
+      }
     }
-    
+
     await claim.save();
     res.json({ message: `Claim successfully ${status.toLowerCase()}.`, claim });
   } catch (error) {
-    res.status(500).json({ message: 'Server error resolving claim' });
+    res.status(500).json({ message: "Server error resolving claim" });
   }
 });
 

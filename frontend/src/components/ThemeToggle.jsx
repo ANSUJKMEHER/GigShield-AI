@@ -1,6 +1,6 @@
-import { Sun, Moon } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useTheme } from '../contexts/ThemeContext';
+import { Sun, Moon } from "lucide-react";
+import { motion } from "framer-motion";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
@@ -13,7 +13,7 @@ export default function ThemeToggle() {
     >
       <motion.div
         className="w-4 h-4 md:w-5 md:h-5 bg-indigo-500 rounded-full flex items-center justify-center shadow-lg"
-        animate={{ x: isDark ? '120%' : '0%' }}
+        animate={{ x: isDark ? "120%" : "0%" }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
       >
         {isDark ? (

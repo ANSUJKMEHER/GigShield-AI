@@ -1,17 +1,17 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   city: { type: String, required: true },
-  zone: { type: String, default: 'General' },
+  zone: { type: String, default: "General" },
   platform: { type: String, required: true },
   riskScore: { type: Number, default: 0 },
-  activePlan: { 
-    type: String, 
-    enum: ['None', 'Basic', 'Pro', 'Elite'],
-    default: 'None'
+  activePlan: {
+    type: String,
+    enum: ["None", "Basic", "Pro", "Elite"],
+    default: "None",
   },
   location: { lat: Number, lon: Number },
   workingHours: { start: String, end: String },
@@ -23,7 +23,7 @@ const UserSchema = new mongoose.Schema({
   maxClaimsPerWeek: { type: Number, default: 0 },
   claimsThisWeek: { type: Number, default: 0 },
   totalPayouts: { type: Number, default: 0 },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model("User", UserSchema);
