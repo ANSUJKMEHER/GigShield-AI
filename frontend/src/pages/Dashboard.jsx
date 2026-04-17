@@ -765,8 +765,8 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        </div>
       )}
+
 
       {/* 7. Razorpay UPI Mock Simulator Overlay */}
       {showRazorpay && simulationResult?.success && (
