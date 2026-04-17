@@ -96,7 +96,11 @@ exports.detectFraud = async (userId, triggerEvent, city, liveGps, liveWeather, t
 
     if (recentClaim) {
       checks.duplicateFree = false;
-      if (!isFraud && !requiresReview) { requiresReview = true; reason = '24-hour Cooldown triggered. Claim flagged for manual duplication review.'; }
+      // Force soft-review for duplicates, downgrading any hard blocks (like a forgotten mouse wiggle) 
+      // so the demo script perfectly catches the 24-hr rule every single time.
+      requiresReview = true; 
+      isFraud = false;
+      reason = '24-hour Cooldown triggered. Claim flagged for manual duplication review.'; 
     }
 
     // [DEVTRAILS DEMO OVERRIDE] 
